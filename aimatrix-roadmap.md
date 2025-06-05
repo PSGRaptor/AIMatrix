@@ -6,9 +6,9 @@
 
 **Milestones:**
 
-* [ ] Create initial GitHub repo (private if preferred)
+* [x] Create initial GitHub repo (private if preferred)
 * [ ] Add wireframes, design docs, and initial README
-* [ ] Establish .gitignore, code formatting, and branch naming conventions
+* [x] Establish .gitignore, code formatting, and branch naming conventions
 
 **GitHub Workflow:**
 
@@ -21,7 +21,7 @@
 
 **Milestones:**
 
-* [ ] Scaffold Electron main process (main.js, preload.js)
+* [ ] Scaffold Electron main process (main.js, preload.ts)
 * [ ] Initialize React renderer (Vite or CRA)
 * [ ] Directory structure (`/app/main`, `/app/renderer`, `/assets`, `/config`)
 * [ ] Basic Gradle integration (if desired for builds)

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "jsx": "react-jsx",
+    "outDir": "./app",
+    "rootDir": "./app",
+    "strict": true,
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "."
+  },
+  "include": ["app/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

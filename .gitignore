@@ -28,6 +28,21 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+# Node
+node_modules/
+dist/
+.env
+*.log
+
+# Editor
+.idea/
+.vscode/
+.DS_Store
+
+# Output
+*.local
+
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

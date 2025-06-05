@@ -1,0 +1,7 @@
+[
+  {
+    "name": "Stable Diffusion",
+    "icon": "./assets/app-logo.svg",
+    "description": "Advanced image synthesis and text-to-image generation."
+  }
+]
