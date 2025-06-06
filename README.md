@@ -133,7 +133,7 @@ The app will launch with the initial layout, logo, and modals. See the roadmap f
 
 ## Design References
 
-* [AIMatrix Application Design Brief.txt](./AIMatrix%20Application%20Design%20Brief.txt)
+* [AIMatrix Application Design Brief.txt](./AIMatrix_Application_Design_Brief.txt)
 * [Wireframe (SVG/PNG)](./app/renderer/assets/app-wireframe.png) *(add this if available)*
 * App logo: [`app/renderer/assets/app-logo.svg`](./app/renderer/assets/app-logo.svg)
 * [aimatrix-roadmap.md](./aimatrix-roadmap.md)

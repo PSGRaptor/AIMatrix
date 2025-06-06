@@ -16,7 +16,7 @@ export default function ThemeToggle({
         >
             {theme === "dark" ? (
                 // Moon outline
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                     <path
                         d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"
                         strokeLinecap="round"
@@ -25,7 +25,7 @@ export default function ThemeToggle({
                 </svg>
             ) : (
                 // Sun outline
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="5" />
                     <path
                         d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.07l-1.41-1.41M6.34 6.34L4.93 4.93m12.02 12.02l-1.41-1.41M6.34 17.66l-1.41 1.41"

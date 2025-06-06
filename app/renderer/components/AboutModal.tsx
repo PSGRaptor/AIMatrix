@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import pkg from '../../../package.json';
 
 export default function AboutModal({ onClose }: { onClose: () => void }) {
     const modalRef = useRef<HTMLDivElement>(null);
@@ -26,8 +27,8 @@ export default function AboutModal({ onClose }: { onClose: () => void }) {
                 tabIndex={-1}
             >
                 <div className="flex items-center mb-4">
-                    <img src="./assets/app-logo.svg" className="w-10 h-10 mr-4" alt="AIMatrix Logo" />
-                    <span className="text-2xl font-bold tracking-wide">AIMatrix</span>
+                    <img src="./assets/app-logo.svg" className="w-20 h-20 mr-4" alt="AIMatrix Logo" />
+                    <span className="text-2xl font-bold tracking-wide">AI Matrix</span>
                 </div>
                 <div className="mb-2 flex items-center">
                     {/* Info Icon */}
@@ -39,7 +40,7 @@ export default function AboutModal({ onClose }: { onClose: () => void }) {
                     <span className="font-medium">All-in-one AI launcher & manager for desktop.</span>
                 </div>
                 <div className="mb-4 max-h-36 overflow-y-auto rounded bg-gray-50/80 dark:bg-gray-800/70 p-3 text-sm leading-relaxed">
-                    AIMatrix lets you configure, launch, and manage powerful local AI tools from a unified, beautiful interface. <br />
+                    AI Matrix lets you configure, launch, and manage powerful local AI tools from a unified, beautiful interface. <br />
                     This platform is built for performance, security, and ease-of-use on Windows 11—with cross-platform support coming soon.
                 </div>
                 <div className="flex items-center mb-1 text-sm">
@@ -59,7 +60,7 @@ export default function AboutModal({ onClose }: { onClose: () => void }) {
                     <span>Last Update: June 2025</span>
                 </div>
                 <div className="flex items-center mb-1 text-sm">
-                    <span className="mr-2">v0.1.0</span>
+                    <span className="mr-2">v{pkg.version}</span>
                     <a
                         href="https://github.com/PSGRaptor/AIMatrix"
                         target="_blank"
