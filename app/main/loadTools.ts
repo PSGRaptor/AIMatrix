@@ -20,7 +20,7 @@ export type ToolConfig = {
  * Returns an array of ToolConfig objects.
  */
 export function loadTools(): ToolConfig[] {
-    const dir = path.join(__dirname, "../../config/tools");
+    const dir = path.join(__dirname, "../config/tools");
     if (!fs.existsSync(dir)) {
         return [];
     }

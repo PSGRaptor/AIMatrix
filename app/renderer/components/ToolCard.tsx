@@ -1,16 +1,12 @@
-// app/renderer/components/ToolCard.tsx
-
 import React from "react";
-// Import the ToolConfig type from your global types
-import { ToolConfig } from "../env"; // Adjust this import path if your type is elsewhere
-import { launchTool, openTerminal, openImageViewer } from "../utils/ipc";
+import { ToolConfig } from "../env";
+import { startTool, launchTool, openTerminal, openImageViewer } from "../utils/loadTools";
 
 /**
- * ToolCard Component
- *
- * Renders a single tool card with info and actions (Start, Terminal, Images).
- * Uses the full ToolConfig type so all new config fields are available.
+ * ToolCard — Renders each tool with actions.
+ * Now uses ToolConfig (all fields from JSON).
  */
+
 export default function ToolCard({
                                      tool,
                                      onClick,
@@ -24,6 +20,17 @@ export default function ToolCard({
     onTerminal?: () => void;
     active?: boolean;
 }) {
+    // Start tool handler
+    const handleStart = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const result = await startTool(tool.startCommand, tool.toolRoot);
+        if (result.success) {
+            if (tool.url) launchTool(tool.url); // Optionally open the web UI
+        } else {
+            alert(`Failed to launch tool: ${result.error}`);
+        }
+    };
+
     return (
         <div
             className={`rounded-xl shadow-lg p-6 mb-2 cursor-pointer transition
@@ -46,7 +53,6 @@ export default function ToolCard({
             aria-pressed={!!active}
             aria-label={`View info for ${tool.name}`}
         >
-            {/* Tool icon and name */}
             <div className="flex items-center mb-4">
                 {tool.icon && (
                     <span className="text-5xl mr-3 select-none" aria-hidden>
@@ -55,26 +61,17 @@ export default function ToolCard({
                 )}
                 <h3 className="text-xl font-bold">{tool.name}</h3>
             </div>
-            {/* Tool description */}
             <p className="flex-1 text-gray-700 dark:text-gray-300 mb-2 overflow-hidden text-ellipsis">
                 {tool.description}
             </p>
-            {/* Tool actions */}
             <div className="flex gap-2 mt-auto">
-                {/* Start (launches the tool's startCommand in its root) */}
                 <button
                     className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-800 text-white text-sm"
                     title="Start Tool"
-                    onClick={e => {
-                        e.stopPropagation();
-                        launchTool(tool.url); // For launching tool in Electron window
-                        // To launch the local process, call startTool(tool.startCommand, tool.toolRoot)
-                        // (see: use startTool from utils/loadTools.ts if you want to start the process)
-                    }}
+                    onClick={handleStart}
                 >
                     Start
                 </button>
-                {/* Open terminal in tool root */}
                 <button
                     className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
                     title="Open Tool Terminal"
@@ -85,7 +82,6 @@ export default function ToolCard({
                 >
                     Terminal
                 </button>
-                {/* Open tool output folder */}
                 <button
                     className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
                     title="Open Image Output Folder"
