@@ -43,7 +43,7 @@
 * [x] Build Quick Menu (Left bar with icons, responsive)
 * [x] Center pane placeholder (Tool Cards grid)
 * [x] Right info pane (placeholder)
-* [ ] Global dark/light mode toggle (initial state)
+* [x] Global dark/light mode toggle (initial state)
 
 **GitHub Workflow:**
 

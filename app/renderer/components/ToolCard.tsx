@@ -15,15 +15,18 @@ export default function ToolCard({
 }) {
     return (
         <div
-            className={`flex flex-col items-start justify-between bg-gray-800 border rounded-2xl shadow-lg p-6 cursor-pointer hover:bg-gray-700 transition
-        ${active ? "border-blue-500 ring-2 ring-blue-500" : "border-gray-700"}
+            className={`rounded-xl shadow-lg p-6 mb-2 cursor-pointer transition
+            bg-white dark:bg-gray-900
+            border border-gray-200 dark:border-gray-800
+            hover:bg-blue-50 dark:hover:bg-gray-800
+            ${active ? "ring-2 ring-blue-500" : "border-gray-700"}
       `}
             style={{
                 maxWidth: 450,
                 minWidth: 320,
                 minHeight: 210,
-                maxHeight: 300,
-                height: 300,
+                maxHeight: 200,
+                height: 200,
                 overflow: "hidden",
             }}
             onClick={onClick}
@@ -36,7 +39,7 @@ export default function ToolCard({
                 )}
                 <h3 className="text-xl font-bold">{tool.name}</h3>
             </div>
-            <p className="flex-1 text-gray-300 mb-4 overflow-hidden text-ellipsis">
+            <p className="flex-1 text-gray-700 dark:text-gray-300 mb-2 overflow-hidden text-ellipsis">
                 {tool.description}
             </p>
             <div className="flex gap-2 mt-auto">
