@@ -7,7 +7,7 @@
 **Milestones:**
 
 * [x] Create initial GitHub repo (private if preferred)
-* [ ] Add wireframes, design docs, and initial README
+* [x] Add wireframes, design docs, and initial README
 * [x] Establish .gitignore, code formatting, and branch naming conventions
 
 **GitHub Workflow:**
@@ -21,11 +21,11 @@
 
 **Milestones:**
 
-* [ ] Scaffold Electron main process (main.js, preload.ts)
-* [ ] Initialize React renderer (Vite or CRA)
-* [ ] Directory structure (`/app/main`, `/app/renderer`, `/assets`, `/config`)
-* [ ] Basic Gradle integration (if desired for builds)
-* [ ] Setup ESLint, Prettier, Husky (pre-commit), and lint-staged
+* [x] Scaffold Electron main process (main.js, preload.ts)
+* [x] Initialize React renderer (Vite or CRA)
+* [x] Directory structure (`/app/main`, `/app/renderer`, `/assets`, `/config`)
+* [x] Basic Gradle integration (if desired for builds)
+* [x] Setup ESLint, Prettier, Husky (pre-commit), and lint-staged
 
 **GitHub Workflow:**
 
@@ -39,10 +39,10 @@
 
 **Milestones:**
 
-* [ ] Implement Top Menu (About, Help)
-* [ ] Build Quick Menu (Left bar with icons, responsive)
-* [ ] Center pane placeholder (Tool Cards grid)
-* [ ] Right info pane (placeholder)
+* [x] Implement Top Menu (About, Help)
+* [x] Build Quick Menu (Left bar with icons, responsive)
+* [x] Center pane placeholder (Tool Cards grid)
+* [x] Right info pane (placeholder)
 * [ ] Global dark/light mode toggle (initial state)
 
 **GitHub Workflow:**

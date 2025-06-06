@@ -1,4 +1,7 @@
 // Main Electron process: creates browser window, loads renderer, sets up context isolation
+
+console.log('ELECTRON process.env.NODE_ENV:', process.env.NODE_ENV);
+
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 
@@ -21,13 +24,20 @@ function createWindow() {
         icon: path.join(__dirname, '../../renderer/assets/app-logo.svg')
     });
 
-//   if (process.env.NODE_ENV === 'development') {
-        win.loadURL('http://localhost:5173');
-        win.webContents.openDevTools();
-    console.log('Electron loaded URL: http://localhost:5173');
-//    } else {
-//        win.loadFile(path.join(__dirname, '../../renderer/dist/index.html'));
-//    }
+   if (process.env.NODE_ENV === 'development') {
+       //win.loadURL('https://www.google.com');
+       win.loadURL('http://localhost:5173');
+       win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+           console.error('Window failed to load:', errorCode, errorDescription);
+       });
+       win.webContents.on('did-finish-load', () => {
+           console.log('Window finished loading!');
+       });
+       win.webContents.openDevTools();
+       console.log('Electron loaded URL: http://localhost:5173');
+    } else {
+        win.loadFile(path.join(__dirname, '../../renderer/dist/index.html'));
+    }
 }
 
 app.whenReady().then(createWindow);
