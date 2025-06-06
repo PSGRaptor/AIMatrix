@@ -1,0 +1,10 @@
+{
+  "name": "Stable Diffusion",
+  "icon": "🧠",
+  "description": "AI image generator",
+  "toolRoot": "Y:/lobe-chat",
+  "url": "http://localhost:7860",
+  "outputFolder": "D:/_Outputs/SM-Stable Diffusion WebUI/",
+  "updateCommand": "Y:/lobe-chat/git pull",
+  "startCommand": "C:/AI/StableDiffusion/webui-user.bat"
+}

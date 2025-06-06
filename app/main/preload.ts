@@ -1,6 +1,11 @@
-// Electron preload script: safely exposes limited APIs to renderer
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld('electronAPI', {
-    // add secure APIs as needed
+/**
+ * Exposes safe APIs for renderer to communicate with main process.
+ */
+contextBridge.exposeInMainWorld("electronAPI", {
+    getTools: () => ipcRenderer.invoke("get-tools"),
+    startTool: (startCommand: string, workingDir: string) =>
+        ipcRenderer.invoke("start-tool", startCommand, workingDir),
+    // Add more as needed (terminal, image viewer, etc)
 });
