@@ -34,7 +34,6 @@ export function launchTool(url: string) {
     }
 }
 
-
 /**
  * Opens the tool's terminal (implement as needed; this is a stub).
  */

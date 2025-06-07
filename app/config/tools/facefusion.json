@@ -1,0 +1,10 @@
+{
+  "name": "FaceFusion",
+  "icon": "🧠",
+  "description": "Face swap AI GUI",
+  "toolRoot": "Y:/FaceFusion",
+  "url": "http://127.0.0.1:7860",
+  "outputFolder": "D:/_Outputs/FaceFusion",
+  "updateCommand": "Y:/lobe-chat/git pull",
+  "startCommand": "Y:/FaceFusion/start-ff.bat"
+}

@@ -1,26 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ToolCard from "../components/ToolCard";
 import ThemeToggle from "../components/ThemeToggle";
 import { ToolConfig } from "../env";
+import { loadTools } from "../utils/loadTools"; // This is the renderer-side async loader
 
-// Type for props, tools is now optional (default = [])
+type QuickMenuType = "cards" | "imageViewer" | "terminal";
+
 type MainViewProps = {
-    tools?: ToolConfig[];
     openAboutModal: () => void;
     openConfigModal: () => void;
     theme: "dark" | "light";
     setTheme: (t: "dark" | "light") => void;
 };
 
-type QuickMenuType = "cards" | "imageViewer" | "terminal";
-
 export default function MainView({
-                                     tools = [], // DEFAULT: no crash if undefined
                                      openAboutModal,
                                      openConfigModal,
                                      theme,
                                      setTheme,
                                  }: MainViewProps) {
+    // State to hold tool configs loaded from backend
+    const [tools, setTools] = useState<ToolConfig[]>([]);
     const [infoPaneWidth, setInfoPaneWidth] = useState(25);
     const [activeTool, setActiveTool] = useState<ToolConfig | null>(null);
 
@@ -29,7 +29,19 @@ export default function MainView({
     const [imageViewerEnabled, setImageViewerEnabled] = useState(false);
     const [terminalEnabled, setTerminalEnabled] = useState(false);
 
-    // Simulate activating ImageViewer and Terminal from ToolCard actions
+    // Load tools from backend when MainView mounts
+    useEffect(() => {
+        async function fetchTools() {
+            try {
+                const loaded = await loadTools();
+                setTools(Array.isArray(loaded) ? loaded : []);
+            } catch (err) {
+                setTools([]);
+            }
+        }
+        fetchTools();
+    }, []);
+
     function handleOpenImageViewer() {
         setImageViewerEnabled(true);
         setActiveMenu("imageViewer");
@@ -70,7 +82,6 @@ export default function MainView({
                     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
                 }}
             >
-                {/* SAFEGUARD: if tools array is empty, show message */}
                 {tools.length === 0 ? (
                     <div className="col-span-full text-gray-500 text-xl p-12 text-center">
                         No tools found. Please add .json files in <code>app/config/tools/</code>
@@ -80,9 +91,8 @@ export default function MainView({
                         <ToolCard
                             key={tool.name}
                             tool={tool}
-                            onClick={() => setActiveTool(tool)}
-                            onImageViewer={handleOpenImageViewer}
-                            onTerminal={handleOpenTerminal}
+                            onStartTerminal={handleOpenTerminal}
+                            onShowInfo={() => setActiveTool(tool)}
                             active={activeTool?.name === tool.name}
                         />
                     ))
@@ -177,7 +187,7 @@ export default function MainView({
                         {/* Gear icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="3" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
                         </svg>
                     </button>
                 </div>

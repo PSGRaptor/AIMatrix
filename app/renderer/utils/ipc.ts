@@ -1,6 +1,6 @@
 declare global {
     interface Window {
-        ElectronAPI: {
+        electronAPI: {
             getTools: () => Promise<any[]>;
             runToolTerminal: (cmd: string, dir: string) => Promise<any>;
             openToolWindow: (url: string) => Promise<any>;
