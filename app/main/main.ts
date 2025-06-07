@@ -32,7 +32,13 @@ app.on("window-all-closed", () => {
 });
 
 /** Tool config loader (no change) */
-ipcMain.handle("get-tools", async () => loadTools());
+//ipcMain.handle("get-tools", async () => loadTools());
+
+ipcMain.handle("get-tools", async () => {
+    const tools = loadTools();
+    return tools;
+});
+
 
 /** Launches a tool process (.bat, .sh, .exe) and streams terminal output */
 ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: string) => {
