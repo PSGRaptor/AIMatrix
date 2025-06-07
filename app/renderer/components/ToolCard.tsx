@@ -1,44 +1,26 @@
 import React from "react";
 import { ToolConfig } from "../env";
-import { startTool, launchTool, openTerminal, openImageViewer } from "../utils/loadTools";
-
-/**
- * ToolCard — Renders each tool with actions.
- * Now uses ToolConfig (all fields from JSON).
- */
+import { runToolTerminal, openToolWindow } from "../utils/ipc";
 
 export default function ToolCard({
                                      tool,
-                                     onClick,
-                                     onImageViewer,
-                                     onTerminal,
+                                     onStartTerminal,
+                                     onShowInfo,
                                      active,
                                  }: {
     tool: ToolConfig;
-    onClick: () => void;
-    onImageViewer?: () => void;
-    onTerminal?: () => void;
+    onStartTerminal: () => void;
+    onShowInfo: () => void;
     active?: boolean;
 }) {
-    // Start tool handler
-    const handleStart = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        const result = await startTool(tool.startCommand, tool.toolRoot);
-        if (result.success) {
-            if (tool.url) launchTool(tool.url); // Optionally open the web UI
-        } else {
-            alert(`Failed to launch tool: ${result.error}`);
-        }
-    };
-
     return (
         <div
             className={`rounded-xl shadow-lg p-6 mb-2 cursor-pointer transition
-        bg-white dark:bg-gray-900
-        border border-gray-200 dark:border-gray-800
-        hover:bg-blue-50 dark:hover:bg-gray-800
-        ${active ? "ring-2 ring-blue-500" : "border-gray-700"}
-      `}
+                bg-white dark:bg-gray-900
+                border border-gray-200 dark:border-gray-800
+                hover:bg-blue-50 dark:hover:bg-gray-800
+                ${active ? "ring-2 ring-blue-500" : "border-gray-700"}
+          `}
             style={{
                 maxWidth: 450,
                 minWidth: 320,
@@ -47,7 +29,7 @@ export default function ToolCard({
                 height: 200,
                 overflow: "hidden",
             }}
-            onClick={onClick}
+            onClick={onShowInfo}
             tabIndex={0}
             role="button"
             aria-pressed={!!active}
@@ -56,8 +38,8 @@ export default function ToolCard({
             <div className="flex items-center mb-4">
                 {tool.icon && (
                     <span className="text-5xl mr-3 select-none" aria-hidden>
-            {tool.icon}
-          </span>
+                        {tool.icon}
+                    </span>
                 )}
                 <h3 className="text-xl font-bold">{tool.name}</h3>
             </div>
@@ -67,31 +49,20 @@ export default function ToolCard({
             <div className="flex gap-2 mt-auto">
                 <button
                     className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-800 text-white text-sm"
-                    title="Start Tool"
-                    onClick={handleStart}
+                    title="Start + Terminal"
+                    onClick={e => { e.stopPropagation(); onStartTerminal(); }}
                 >
                     Start
                 </button>
-                <button
-                    className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
-                    title="Open Tool Terminal"
-                    onClick={e => {
-                        e.stopPropagation();
-                        openTerminal(tool.toolRoot);
-                    }}
-                >
-                    Terminal
-                </button>
-                <button
-                    className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
-                    title="Open Image Output Folder"
-                    onClick={e => {
-                        e.stopPropagation();
-                        openImageViewer(tool.outputFolder);
-                    }}
-                >
-                    Images
-                </button>
+                {tool.url && (
+                    <button
+                        className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
+                        title="Open Tool UI"
+                        onClick={e => { e.stopPropagation(); openToolWindow(tool.url); }}
+                    >
+                        Open UI
+                    </button>
+                )}
             </div>
         </div>
     );

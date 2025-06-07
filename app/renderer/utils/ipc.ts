@@ -1,9 +1,24 @@
-export function launchTool(url: string) {
-    window.Electron?.ipcRenderer?.invoke("launch-tool", url);
+declare global {
+    interface Window {
+        electronAPI: {
+            getTools: () => Promise<any[]>;
+            runToolTerminal: (cmd: string, dir: string) => Promise<any>;
+            openToolWindow: (url: string) => Promise<any>;
+            onToolTerminalData: (cb: (data: string) => void) => void;
+            onToolTerminalExit: (cb: (code: number) => void) => void;
+        };
+    }
 }
-export function openTerminal(folderPath: string) {
-    window.Electron?.ipcRenderer?.invoke("open-terminal", folderPath);
+
+export function runToolTerminal(startCommand: string, workingDir: string) {
+    window.electronAPI?.runToolTerminal(startCommand, workingDir);
 }
-export function openImageViewer(folderPath: string) {
-    window.Electron?.ipcRenderer?.invoke("open-image-viewer", folderPath);
+export function openToolWindow(url: string) {
+    window.electronAPI?.openToolWindow(url);
+}
+export function listenToolTerminalData(cb: (data: string) => void) {
+    window.electronAPI?.onToolTerminalData(cb);
+}
+export function listenToolTerminalExit(cb: (code: number) => void) {
+    window.electronAPI?.onToolTerminalExit(cb);
 }
