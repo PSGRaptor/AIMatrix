@@ -1,20 +1,15 @@
 import React from "react";
 import { ToolConfig } from "../env";
-import { runToolTerminal, openToolWindow, openImageViewer } from "../utils/ipc";
 
 export default function ToolCard({
                                      tool,
                                      onStartTerminal,
                                      onShowInfo,
-                                     onOpenUI,
-                                     onOpenOutputs,
                                      active,
                                  }: {
     tool: ToolConfig;
     onStartTerminal: () => void;
     onShowInfo: () => void;
-    onOpenUI: () => void;
-    onOpenOutputs: () => void;
     active?: boolean;
 }) {
     return (
@@ -62,18 +57,9 @@ export default function ToolCard({
                     <button
                         className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
                         title="Open Tool UI"
-                        onClick={e => { e.stopPropagation(); onOpenUI(); }}
+                        onClick={e => { e.stopPropagation(); window.electronAPI?.openToolWindow?.(tool.url); }}
                     >
                         Open UI
-                    </button>
-                )}
-                {tool.outputFolder && (
-                    <button
-                        className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
-                        title="Open Output Folder"
-                        onClick={e => { e.stopPropagation(); onOpenOutputs(); }}
-                    >
-                        Outputs
                     </button>
                 )}
             </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import MainView from "./views/MainView";
 import AboutModal from "./components/AboutModal";
 import ConfigModal from "./components/ConfigModal";
-import { ToolConfig } from "./env";
 import { loadTools } from "./utils/loadTools";
 
 export default function App() {

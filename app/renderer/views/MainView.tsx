@@ -73,10 +73,11 @@ export default function MainView({
                             key={tool.name}
                             tool={tool}
                             onShowInfo={() => setActiveTool(tool)}
+                            onStartTerminal={() => {
+                                setActiveTool(tool);
+                                handleOpenTerminal();
+                            }}
                             active={activeTool?.name === tool.name}
-                            onStartTerminal={() => runToolTerminal(tool.startCommand, tool.toolRoot)}
-                            onOpenUI={() => openToolWindow(tool.url)}
-                            onOpenOutputs={() => openImageViewer(tool.outputFolder)}
                         />
                     ))
                 )}
