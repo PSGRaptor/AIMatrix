@@ -1,13 +1,9 @@
 import React from "react";
 import { ToolConfig } from "../env";
-import { runToolTerminal, openToolWindow } from "../utils/ipc";
+import { runToolTerminal, openToolWindow, openImageViewer } from "../utils/ipc";
 
 /**
- * ToolCard — Displays a tool and actions (start, open UI).
- * @param tool - The tool config object.
- * @param onStartTerminal - Handler for starting the tool (usually launches terminal/bat).
- * @param onShowInfo - Handler to display tool info in info pane.
- * @param active - If this card is currently active/selected.
+ * ToolCard — Displays a tool and actions (start, open UI, outputs).
  */
 export default function ToolCard({
                                      tool,
@@ -51,12 +47,10 @@ export default function ToolCard({
                 )}
                 <h3 className="text-xl font-bold">{tool.name}</h3>
             </div>
-
             {/* Description */}
             <p className="flex-1 text-gray-700 dark:text-gray-300 mb-2 overflow-hidden text-ellipsis">
                 {tool.description}
             </p>
-
             {/* Actions */}
             <div className="flex gap-2 mt-auto">
                 <button
@@ -80,6 +74,19 @@ export default function ToolCard({
                         }}
                     >
                         Open UI
+                    </button>
+                )}
+                {/* Outputs: Open image output folder */}
+                {tool.outputFolder && (
+                    <button
+                        className="px-3 py-1 rounded bg-gray-500 hover:bg-gray-600 text-white text-sm"
+                        title="Open Output Images Folder"
+                        onClick={e => {
+                            e.stopPropagation();
+                            openImageViewer(tool.outputFolder);
+                        }}
+                    >
+                        Outputs
                     </button>
                 )}
             </div>

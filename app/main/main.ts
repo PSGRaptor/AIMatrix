@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, shell, ipcMain } from "electron";
 import * as path from "path";
 import * as child_process from "child_process";
 import { loadTools } from "./loadTools";
@@ -78,4 +78,12 @@ ipcMain.handle("open-tool-window", async (_event, url: string) => {
     toolWin.loadURL(url);
     toolWin.show();
     return { success: true };
+});
+
+ipcMain.handle("open-output-folder", async (_event, folderPath: string) => {
+    if (folderPath && typeof folderPath === "string") {
+        await shell.openPath(folderPath);
+        return { success: true };
+    }
+    return { success: false, error: "No folder path provided" };
 });
