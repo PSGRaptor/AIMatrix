@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain } from "electron";
 import * as path from "path";
+import * as fs from "fs";
 import * as child_process from "child_process";
 import { loadTools } from "./loadTools";
 
@@ -39,6 +40,27 @@ ipcMain.handle("get-tools", async () => {
     return tools;
 });
 
+ipcMain.handle("get-image-files-in-folder", async (_event, folder: string) => {
+    if (!fs.existsSync(folder)) return [];
+    return fs.readdirSync(folder)
+        .filter(file => /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(file));
+});
+
+ipcMain.handle("read-image-file-as-array-buffer", async (_event, folder: string, filename: string) => {
+    const fullPath = path.join(folder, filename);
+    return fs.readFileSync(fullPath).buffer;
+});
+
+ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
+    try {
+        const files = fs.readdirSync(folder);
+        // Basic filter for common image files. Add more as needed.
+        const images = files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
+        return images;
+    } catch (e) {
+        return [];
+    }
+});
 
 /** Launches a tool process (.bat, .sh, .exe) and streams terminal output */
 ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: string) => {

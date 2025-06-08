@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import ToolCard from "../components/ToolCard";
 import ThemeToggle from "../components/ThemeToggle";
-import TerminalPane from "../components/TerminalPane";
-import ImageViewerPane from "../components/ImageViewerPane";
 import { ToolConfig } from "../env";
-import { loadTools } from "../utils/loadTools";
+import { loadTools } from "../utils/loadTools"; // This is the renderer-side async loader
 
 type QuickMenuType = "cards" | "imageViewer" | "terminal";
 
@@ -21,15 +19,17 @@ export default function MainView({
                                      theme,
                                      setTheme,
                                  }: MainViewProps) {
+    // State to hold tool configs loaded from backend
     const [tools, setTools] = useState<ToolConfig[]>([]);
     const [infoPaneWidth, setInfoPaneWidth] = useState(25);
     const [activeTool, setActiveTool] = useState<ToolConfig | null>(null);
+
+    // Track which menu is active, plus which are enabled
     const [activeMenu, setActiveMenu] = useState<QuickMenuType>("cards");
-    const [terminalTool, setTerminalTool] = useState<ToolConfig | null>(null);
+    const [imageViewerEnabled, setImageViewerEnabled] = useState(false);
+    const [terminalEnabled, setTerminalEnabled] = useState(false);
 
-    // The only state you need for image viewer: outputFolder + which tool it’s for
-    const [imageViewer, setImageViewer] = useState<{ folder: string; tool: ToolConfig } | null>(null);
-
+    // Load tools from backend when MainView mounts
     useEffect(() => {
         async function fetchTools() {
             try {
@@ -42,19 +42,17 @@ export default function MainView({
         fetchTools();
     }, []);
 
-    // Start terminal for a tool
-    const handleStartTerminal = useCallback((tool: ToolConfig) => {
-        setTerminalTool(tool);
+    function handleOpenImageViewer() {
+        setImageViewerEnabled(true);
+        setActiveMenu("imageViewer");
+    }
+    function handleOpenTerminal() {
+        setTerminalEnabled(true);
         setActiveMenu("terminal");
-    }, []);
-
-    // Open image viewer for a tool’s output folder
-    const handleOpenImageViewer = useCallback((tool: ToolConfig) => {
-        if (tool.outputFolder) {
-            setImageViewer({ folder: tool.outputFolder, tool });
-            setActiveMenu("imageViewer");
-        }
-    }, []);
+    }
+    function handleBackToCards() {
+        setActiveMenu("cards");
+    }
 
     // Info pane resizer
     const handleDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -74,62 +72,65 @@ export default function MainView({
         window.addEventListener("mouseup", onMouseUp);
     };
 
-    // Center pane logic
+    // Display area based on active quick menu
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
             <div
                 className="grid gap-8"
-                style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
+                style={{
+                    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                }}
             >
                 {tools.length === 0 ? (
                     <div className="col-span-full text-gray-500 text-xl p-12 text-center">
                         No tools found. Please add .json files in <code>app/config/tools/</code>
                     </div>
                 ) : (
-                    tools.map(tool => (
+                    tools.map((tool) => (
                         <ToolCard
                             key={tool.name}
                             tool={tool}
-                            onStartTerminal={() => handleStartTerminal(tool)}
+                            onStartTerminal={handleOpenTerminal}
                             onShowInfo={() => setActiveTool(tool)}
-                            onOpenImageViewer={() => handleOpenImageViewer(tool)}
                             active={activeTool?.name === tool.name}
                         />
                     ))
                 )}
             </div>
         );
-    } else if (activeMenu === "terminal") {
-        centerPane = terminalTool ? (
-            <TerminalPane tool={terminalTool} onBack={() => setActiveMenu("cards")} />
-        ) : (
+    } else if (activeMenu === "imageViewer") {
+        centerPane = (
             <div className="flex items-center justify-center h-full text-gray-400 text-2xl">
-                No tool selected for terminal.
+                Image Viewer Placeholder
+                <button
+                    className="ml-8 px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white"
+                    onClick={handleBackToCards}
+                >
+                    Back to Cards
+                </button>
             </div>
         );
-    } else if (activeMenu === "imageViewer") {
-        centerPane = imageViewer ? (
-            <ImageViewerPane
-                folderPath={imageViewer.folder}
-                onClose={() => {
-                    setImageViewer(null);
-                    setActiveMenu("cards");
-                }}
-            />
-        ) : (
+    } else if (activeMenu === "terminal") {
+        centerPane = (
             <div className="flex items-center justify-center h-full text-gray-400 text-2xl">
-                No tool/output folder selected.
+                Terminal Window Placeholder
+                <button
+                    className="ml-8 px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white"
+                    onClick={handleBackToCards}
+                >
+                    Back to Cards
+                </button>
             </div>
         );
     }
 
     return (
         <div className="flex w-full h-full">
-            {/* Quick Menu */}
+            {/* Left Quick Menu (fixed 120px) */}
             <aside className="flex flex-col justify-between items-center w-[120px] bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-white py-6 border-r border-gray-200 dark:border-gray-900 transition-colors duration-300">
                 <div className="flex flex-col gap-4">
-                    {/* Cards */}
+                    {/* Cards icon */}
                     <button
                         title="Cards"
                         aria-label="Show Tool Cards"
@@ -145,13 +146,13 @@ export default function MainView({
                             <rect x="3" y="14" width="7" height="7" rx="2" />
                         </svg>
                     </button>
-                    {/* Image Viewer */}
+                    {/* Image Viewer icon */}
                     <button
                         title="Image Viewer"
                         aria-label="Open Image Viewer"
-                        className={`p-3 rounded-lg transition ${activeMenu === "imageViewer" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""} ${!imageViewer ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
-                        onClick={() => imageViewer && setActiveMenu("imageViewer")}
-                        disabled={!imageViewer}
+                        className={`p-3 rounded-lg transition ${activeMenu === "imageViewer" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""} ${!imageViewerEnabled ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
+                        onClick={() => imageViewerEnabled && setActiveMenu("imageViewer")}
+                        disabled={!imageViewerEnabled}
                     >
                         {/* Image icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
@@ -160,13 +161,13 @@ export default function MainView({
                             <path d="M21 19l-5.5-5.5c-.66-.66-1.74-.66-2.4 0L3 19" />
                         </svg>
                     </button>
-                    {/* Terminal */}
+                    {/* Terminal icon */}
                     <button
                         title="Terminal"
                         aria-label="Open Terminal"
-                        className={`p-3 rounded-lg transition ${activeMenu === "terminal" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""} ${!terminalTool ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
-                        onClick={() => terminalTool && setActiveMenu("terminal")}
-                        disabled={!terminalTool}
+                        className={`p-3 rounded-lg transition ${activeMenu === "terminal" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""} ${!terminalEnabled ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
+                        onClick={() => terminalEnabled && setActiveMenu("terminal")}
+                        disabled={!terminalEnabled}
                     >
                         {/* Terminal icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
@@ -177,19 +178,22 @@ export default function MainView({
                     </button>
                 </div>
                 <div className="flex flex-col gap-4">
+                    {/* Theme Toggle */}
                     <ThemeToggle theme={theme} setTheme={setTheme} />
+                    {/* Settings icon */}
                     <button title="Settings" aria-label="Open Settings"
                             onClick={openConfigModal}
                             className="p-3 rounded-lg transition">
                         {/* Gear icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="3" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
                         </svg>
                     </button>
                 </div>
             </aside>
-            {/* Center */}
+
+            {/* Center area */}
             <div
                 className="flex-1 p-8 overflow-y-auto bg-white text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300"
                 style={{
@@ -199,12 +203,14 @@ export default function MainView({
             >
                 {centerPane}
             </div>
+
             {/* Draggable divider */}
             <div
                 className="cursor-col-resize w-2 hover:bg-gray-600 transition-colors duration-200"
                 style={{ zIndex: 10, background: "#2c2c2c" }}
                 onMouseDown={handleDrag}
             />
+
             {/* Info Pane */}
             <aside
                 className="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-800 transition-all duration-200"

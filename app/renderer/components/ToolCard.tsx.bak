@@ -1,21 +1,19 @@
 import React from "react";
 import { ToolConfig } from "../env";
-import { runToolTerminal, openToolWindow } from "../utils/ipc";
+import { runToolTerminal, openToolWindow, openImageViewer } from "../utils/ipc";
 
 /**
- * ToolCard — Displays a tool and actions.
+ * ToolCard — Displays a tool and actions (start, open UI, outputs).
  */
 export default function ToolCard({
                                      tool,
                                      onStartTerminal,
                                      onShowInfo,
-                                     onOpenImageViewer,
                                      active,
                                  }: {
     tool: ToolConfig;
     onStartTerminal: () => void;
     onShowInfo: () => void;
-    onOpenImageViewer: () => void;
     active?: boolean;
 }) {
     return (
@@ -40,6 +38,7 @@ export default function ToolCard({
             aria-pressed={!!active}
             aria-label={`View info for ${tool.name}`}
         >
+            {/* Tool header: Icon and name */}
             <div className="flex items-center mb-4">
                 {tool.icon && (
                     <span className="text-5xl mr-3 select-none" aria-hidden>
@@ -48,9 +47,11 @@ export default function ToolCard({
                 )}
                 <h3 className="text-xl font-bold">{tool.name}</h3>
             </div>
+            {/* Description */}
             <p className="flex-1 text-gray-700 dark:text-gray-300 mb-2 overflow-hidden text-ellipsis">
                 {tool.description}
             </p>
+            {/* Actions */}
             <div className="flex gap-2 mt-auto">
                 <button
                     className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-800 text-white text-sm"
@@ -62,6 +63,7 @@ export default function ToolCard({
                 >
                     Start
                 </button>
+                {/* Open UI only if tool.url is set */}
                 {tool.url && (
                     <button
                         className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
@@ -74,13 +76,14 @@ export default function ToolCard({
                         Open UI
                     </button>
                 )}
+                {/* Outputs: Open image output folder */}
                 {tool.outputFolder && (
                     <button
-                        className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
-                        title="Open Image Output Folder"
+                        className="px-3 py-1 rounded bg-gray-500 hover:bg-gray-600 text-white text-sm"
+                        title="Open Output Images Folder"
                         onClick={e => {
                             e.stopPropagation();
-                            onOpenImageViewer();
+                            openImageViewer(tool.outputFolder);
                         }}
                     >
                         Outputs
