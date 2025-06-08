@@ -1,46 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ToolCard from "../components/ToolCard";
 import ThemeToggle from "../components/ThemeToggle";
 import { ToolConfig } from "../env";
-import { loadTools } from "../utils/loadTools"; // This is the renderer-side async loader
-
-type QuickMenuType = "cards" | "imageViewer" | "terminal";
 
 type MainViewProps = {
+    tools: ToolConfig[];
     openAboutModal: () => void;
     openConfigModal: () => void;
     theme: "dark" | "light";
     setTheme: (t: "dark" | "light") => void;
 };
 
+type QuickMenuType = "cards" | "imageViewer" | "terminal";
+
 export default function MainView({
+                                     tools = [],
                                      openAboutModal,
                                      openConfigModal,
                                      theme,
                                      setTheme,
                                  }: MainViewProps) {
-    // State to hold tool configs loaded from backend
-    const [tools, setTools] = useState<ToolConfig[]>([]);
     const [infoPaneWidth, setInfoPaneWidth] = useState(25);
     const [activeTool, setActiveTool] = useState<ToolConfig | null>(null);
-
-    // Track which menu is active, plus which are enabled
     const [activeMenu, setActiveMenu] = useState<QuickMenuType>("cards");
     const [imageViewerEnabled, setImageViewerEnabled] = useState(false);
     const [terminalEnabled, setTerminalEnabled] = useState(false);
-
-    // Load tools from backend when MainView mounts
-    useEffect(() => {
-        async function fetchTools() {
-            try {
-                const loaded = await loadTools();
-                setTools(Array.isArray(loaded) ? loaded : []);
-            } catch (err) {
-                setTools([]);
-            }
-        }
-        fetchTools();
-    }, []);
 
     function handleOpenImageViewer() {
         setImageViewerEnabled(true);
@@ -53,8 +37,6 @@ export default function MainView({
     function handleBackToCards() {
         setActiveMenu("cards");
     }
-
-    // Info pane resizer
     const handleDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         e.preventDefault();
         const startX = e.clientX;
@@ -72,7 +54,6 @@ export default function MainView({
         window.addEventListener("mouseup", onMouseUp);
     };
 
-    // Display area based on active quick menu
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
@@ -91,8 +72,11 @@ export default function MainView({
                         <ToolCard
                             key={tool.name}
                             tool={tool}
-                            onStartTerminal={handleOpenTerminal}
                             onShowInfo={() => setActiveTool(tool)}
+                            onStartTerminal={() => {
+                                setActiveTool(tool);
+                                handleOpenTerminal();
+                            }}
                             active={activeTool?.name === tool.name}
                         />
                     ))
@@ -154,7 +138,6 @@ export default function MainView({
                         onClick={() => imageViewerEnabled && setActiveMenu("imageViewer")}
                         disabled={!imageViewerEnabled}
                     >
-                        {/* Image icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                             <rect x="3" y="5" width="18" height="14" rx="2" />
                             <circle cx="8.5" cy="10.5" r="1.5" />
@@ -169,7 +152,6 @@ export default function MainView({
                         onClick={() => terminalEnabled && setActiveMenu("terminal")}
                         disabled={!terminalEnabled}
                     >
-                        {/* Terminal icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                             <rect x="3" y="4" width="18" height="16" rx="2" />
                             <path d="M8 9l4 4-4 4" />
@@ -184,16 +166,13 @@ export default function MainView({
                     <button title="Settings" aria-label="Open Settings"
                             onClick={openConfigModal}
                             className="p-3 rounded-lg transition">
-                        {/* Gear icon */}
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="3" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
                         </svg>
                     </button>
                 </div>
             </aside>
-
-            {/* Center area */}
             <div
                 className="flex-1 p-8 overflow-y-auto bg-white text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300"
                 style={{
@@ -203,15 +182,11 @@ export default function MainView({
             >
                 {centerPane}
             </div>
-
-            {/* Draggable divider */}
             <div
                 className="cursor-col-resize w-2 hover:bg-gray-600 transition-colors duration-200"
                 style={{ zIndex: 10, background: "#2c2c2c" }}
                 onMouseDown={handleDrag}
             />
-
-            {/* Info Pane */}
             <aside
                 className="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-800 transition-all duration-200"
                 style={{

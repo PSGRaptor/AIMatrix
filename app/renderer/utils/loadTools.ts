@@ -5,8 +5,11 @@ import { ToolConfig } from "../env";
  */
 export async function loadTools(): Promise<ToolConfig[]> {
     if (window.electronAPI) {
-        return await window.electronAPI.getTools();
+        const tools = await window.electronAPI.getTools();
+        console.log("renderer/utils/loadTools: tools loaded from main:", tools);
+        return tools;
     }
+    console.log("renderer/utils/loadTools: window.electronAPI missing");
     return [];
 }
 

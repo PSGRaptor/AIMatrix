@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import MainView from "./views/MainView";
 import AboutModal from "./components/AboutModal";
 import ConfigModal from "./components/ConfigModal";
+import { loadTools } from "./utils/loadTools";
 
 export default function App() {
     const [showAbout, setShowAbout] = useState(false);
     const [showConfig, setShowConfig] = useState(false);
+    const [tools, setTools] = useState<ToolConfig[]>([]);
     const [theme, setTheme] = useState<"dark" | "light">(() => {
         const stored = localStorage.getItem("aimatrix-theme");
         return stored === "light" ? "light" : "dark";
@@ -18,6 +20,10 @@ export default function App() {
             document.documentElement.classList.remove("dark");
         }
         localStorage.setItem("aimatrix-theme", theme);
+        loadTools().then(tools => {
+            console.log("App.tsx: tools fetched and set:", tools);
+            setTools(tools);
+        });
     }, [theme]);
 
     return (
@@ -42,6 +48,7 @@ export default function App() {
                     openConfigModal={() => setShowConfig(true)}
                     theme={theme}
                     setTheme={setTheme}
+                    tools={tools}
                 />
             </main>
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
