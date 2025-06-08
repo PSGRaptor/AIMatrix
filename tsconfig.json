@@ -12,5 +12,11 @@
     "baseUrl": "."
   },
   "include": ["app/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    ".vite",
+    "*.tsbuildinfo"
+  ]
 }

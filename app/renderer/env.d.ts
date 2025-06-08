@@ -12,12 +12,13 @@ export interface ElectronAPI {
     getTools: () => Promise<ToolConfig[]>;
     runToolTerminal: (cmd: string, dir: string) => Promise<any>;
     openToolWindow: (url: string) => Promise<any>;
+    openImageViewer: (outputFolder: string) => Promise<any>;
     onToolTerminalData: (cb: (data: string) => void) => void;
     onToolTerminalExit: (cb: (code: number) => void) => void;
     startTool: (startCommand: string, workingDir: string) => Promise<{ success: boolean; error?: string }>;
 }
 declare global {
     interface Window {
-        ElectronAPI: ElectronAPI;
+        electronAPI: ElectronAPI;
     }
 }
