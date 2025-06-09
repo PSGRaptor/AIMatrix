@@ -1,15 +1,36 @@
+// app/renderer/components/ImageViewerPane.tsx
+
 import React, { useEffect, useState } from "react";
-import Viewer from "react-viewer";
 import { ToolConfig } from "../env";
+import Viewer from "react-viewer";
+
+import tiff from "tiff";
+import piexif from "piexifjs";
+
+type Props = {
+    folderPath: string;
+    onClose: () => void;
+};
+
+type ImageViewerPaneProps = {
+    folderPath: string;        // The folder path to show images from
+    onClose: () => void;       // Called when viewer should close
+};
 
 type ImageFile = { src: string; alt: string };
+
+const isTiff = (filename: string) =>
+    /\.(tiff?|tif)$/i.test(filename);
+
+const isImage = (filename: string) =>
+    /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(filename);
 
 export default function ImageViewerPane({
                                             tool,
                                             folderPath,
                                             onClose,
                                         }: {
-    tool?: ToolConfig | null;
+    tool: ToolConfig | null;
     folderPath: string | null;
     onClose: () => void;
 }) {
@@ -17,25 +38,17 @@ export default function ImageViewerPane({
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        let revokeList: string[] = [];
         if (!folderPath) return;
+        // Get file list from backend
         (async () => {
-            const files: string[] = await window.electronAPI.getImageFilesInFolder(folderPath);
-            const imageObjs: ImageFile[] = [];
-            for (const filename of files) {
-                // Read file as ArrayBuffer and convert to Blob URL
-                const buffer = await window.electronAPI.readImageFileAsArrayBuffer(folderPath, filename);
-                const blob = new Blob([new Uint8Array(buffer)]);
-                const url = URL.createObjectURL(blob);
-                imageObjs.push({ src: url, alt: filename });
-                revokeList.push(url);
-            }
-            setImages(imageObjs);
-            // cleanup on unmount
-            return () => { revokeList.forEach(url => URL.revokeObjectURL(url)); };
+            const files: string[] = await (window.electronAPI as any).getImageFilesInFolder(folderPath);
+            setImages(
+                files.map(filename => ({
+                    src: `file://${folderPath.replace(/\\/g, "/")}/${filename}`,
+                    alt: filename,
+                }))
+            );
         })();
-        // cleanup blob URLs
-        return () => { revokeList.forEach(url => URL.revokeObjectURL(url)); };
     }, [folderPath]);
 
     return (
@@ -57,12 +70,12 @@ export default function ImageViewerPane({
                     setTimeout(onClose, 250);
                 }}
                 zIndex={9999}
-                drag
+                drag={true}
                 noNavbar={false}
                 noToolbar={false}
-                scalable
-                zoomable
-                downloadable
+                scalable={true}
+                zoomable={true}
+                downloadable={true}
             />
         </div>
     );

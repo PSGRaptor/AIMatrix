@@ -33,28 +33,24 @@ app.on("window-all-closed", () => {
 });
 
 /** Tool config loader (no change) */
-//ipcMain.handle("get-tools", async () => loadTools());
-
 ipcMain.handle("get-tools", async () => {
     const tools = loadTools();
     return tools;
 });
 
+/** Image file listing and reading handlers */
 ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
     if (!fs.existsSync(folder)) return [];
     return fs.readdirSync(folder)
         .filter(file => /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(file));
 });
-
 ipcMain.handle("read-image-file-as-array-buffer", async (_event, folder: string, filename: string) => {
     const fullPath = path.join(folder, filename);
     return fs.readFileSync(fullPath).buffer;
 });
-
 ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
     try {
         const files = fs.readdirSync(folder);
-        // Basic filter for common image files. Add more as needed.
         const images = files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
         return images;
     } catch (e) {
@@ -62,15 +58,20 @@ ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
     }
 });
 
-/** Launches a tool process (.bat, .sh, .exe) and streams terminal output */
-ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: string) => {
-    // Launch with shell for batch/script support, return live output
-    const proc = child_process.spawn(startCommand, {
+/** Run terminal for batch/scripts; stream all output */
+ipcMain.on("run-tool-terminal", (event, startCommand: string, workingDir: string) => {
+    // Detect .bat or .cmd and wrap with cmd.exe /c for full shell support
+    let cmd = startCommand;
+    let args: string[] = [];
+    if (cmd.endsWith(".bat") || cmd.endsWith(".cmd")) {
+        args = ["/c", cmd];
+        cmd = "cmd.exe";
+    }
+    const proc = child_process.spawn(cmd, args, {
         cwd: workingDir,
-        shell: true,
+        shell: false,
         detached: false
     });
-
     proc.stdout.on("data", (data) => {
         event.sender.send("tool-terminal-data", data.toString());
     });
@@ -80,14 +81,11 @@ ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: st
     proc.on("close", (code) => {
         event.sender.send("tool-terminal-exit", code);
     });
-
-    return { success: true };
 });
 
 /** Opens tool's web UI in a dedicated Electron window */
 ipcMain.handle("open-tool-window", async (_event, url: string) => {
     if (!url) return { success: false, error: "No URL provided" };
-
     const toolWin = new BrowserWindow({
         width: 1280,
         height: 900,
@@ -102,6 +100,7 @@ ipcMain.handle("open-tool-window", async (_event, url: string) => {
     return { success: true };
 });
 
+/** Opens output folder (legacy, safe to keep) */
 ipcMain.handle("open-output-folder", async (_event, folderPath: string) => {
     if (folderPath && typeof folderPath === "string") {
         await shell.openPath(folderPath);

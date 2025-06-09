@@ -3,11 +3,10 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("electronAPI", {
+    // Tools
     getTools: () => ipcRenderer.invoke("get-tools"),
-    listImagesInFolder: (folder: string) => ipcRenderer.invoke("list-images-in-folder", folder),
-    runToolTerminal: (cmd: string, dir: string) => ipcRenderer.invoke("run-tool-terminal", cmd, dir),
-    openToolWindow: (url: string) => ipcRenderer.invoke("open-tool-window", url),
-    openImageViewer: (outputFolder: string) => ipcRenderer.invoke("open-output-folder", outputFolder), // <-- use same name!
+    // Terminal streaming: send (not invoke) for streaming!
+    runToolTerminal: (cmd: string, dir: string) => ipcRenderer.send("run-tool-terminal", cmd, dir),
     onToolTerminalData: (callback: (data: string) => void) => {
         ipcRenderer.removeAllListeners("tool-terminal-data");
         ipcRenderer.on("tool-terminal-data", (_event, data) => callback(data));
@@ -16,5 +15,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.removeAllListeners("tool-terminal-exit");
         ipcRenderer.on("tool-terminal-exit", (_event, code) => callback(code));
     },
+
+    // Open tool web UI
+    openToolWindow: (url: string) => ipcRenderer.invoke("open-tool-window", url),
+    // Image handling
     getImageFilesInFolder: (folder: string) => ipcRenderer.invoke("get-image-files-in-folder", folder),
+    readImageFileAsArrayBuffer: (folder: string, filename: string) => ipcRenderer.invoke("read-image-file-as-array-buffer", folder, filename),
+    // (legacy, open native file manager)
+    openImageViewer: (outputFolder: string) => ipcRenderer.invoke("open-output-folder", outputFolder),
 });

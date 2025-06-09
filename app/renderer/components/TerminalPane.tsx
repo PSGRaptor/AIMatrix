@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { ToolConfig } from "../env";
-import { runToolTerminal } from "../utils/ipc";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
 
@@ -14,38 +13,30 @@ export default function TerminalPane({ tool, onBack }: TerminalPaneProps) {
     const xtermRef = useRef<Terminal | null>(null);
 
     useEffect(() => {
-        if (!tool) return;
-        if (!termRef.current) return;
-
-        // Cleanup previous terminal
+        if (!tool || !termRef.current) return;
+        // Dispose any previous instance
         if (xtermRef.current) {
             xtermRef.current.dispose();
         }
-
-        // Create terminal instance
+        // Create and open xterm
         const xterm = new Terminal({ fontSize: 16, theme: { background: "#101014", foreground: "#fff" } });
         xterm.open(termRef.current);
         xterm.writeln(`Launching: ${tool.startCommand} (in ${tool.toolRoot})...`);
+        // Start the process (streaming, via .send not .invoke)
+        window.electronAPI.runToolTerminal(tool.startCommand, tool.toolRoot);
 
-        // Start the process
-        runToolTerminal(tool.startCommand, tool.toolRoot);
-
-        // Handle terminal data from main process
-        const dataHandler = (data: string) => {
-            xterm.write(data.replace(/\n/g, "\r\n"));
-        };
-        const exitHandler = (code: number) => {
-            xterm.writeln(`\r\n[Process exited with code ${code}]`);
-        };
-        window.electronAPI?.onToolTerminalData(dataHandler);
-        window.electronAPI?.onToolTerminalExit(exitHandler);
+        // Attach streaming handlers
+        const dataHandler = (data: string) => xterm.write(data.replace(/\n/g, "\r\n"));
+        const exitHandler = (code: number) => xterm.writeln(`\r\n[Process exited with code ${code}]`);
+        window.electronAPI.onToolTerminalData(dataHandler);
+        window.electronAPI.onToolTerminalExit(exitHandler);
 
         xtermRef.current = xterm;
 
         return () => {
             xterm.dispose();
-            window.electronAPI?.onToolTerminalData(() => {});
-            window.electronAPI?.onToolTerminalExit(() => {});
+            window.electronAPI.onToolTerminalData(() => {});
+            window.electronAPI.onToolTerminalExit(() => {});
         };
     }, [tool]);
 
