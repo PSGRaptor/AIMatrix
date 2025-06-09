@@ -58,10 +58,10 @@
 
 **Milestones:**
 
-* [ ] About modal (modal window, scrollable, dynamic content)
+* [x] About modal (modal window, scrollable, dynamic content)
 * [ ] Config modal (Add/Edit AI Tool)
-* [ ] Theme switching (persist to settings)
-* [ ] Style foundation (Tailwind, CSS Modules, or Styled Components)
+* [x] Theme switching (persist to settings)
+* [x] Style foundation (Tailwind, CSS Modules, or Styled Components)
 
 **GitHub Workflow:**
 

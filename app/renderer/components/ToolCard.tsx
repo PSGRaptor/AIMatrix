@@ -1,6 +1,6 @@
 import React from "react";
 import { ToolConfig } from "../env";
-import { runToolTerminal, openToolWindow } from "../utils/ipc";
+import { runToolTerminal } from "../utils/ipc";
 
 /**
  * ToolCard — Displays a tool and actions.
@@ -10,12 +10,14 @@ export default function ToolCard({
                                      onStartTerminal,
                                      onShowInfo,
                                      onOpenImageViewer,
+                                     onOpenWebTool,
                                      active,
                                  }: {
     tool: ToolConfig;
     onStartTerminal: () => void;
     onShowInfo: () => void;
     onOpenImageViewer: () => void;
+    onOpenWebTool: () => void;
     active?: boolean;
 }) {
     return (
@@ -68,7 +70,7 @@ export default function ToolCard({
                         title="Open Tool Web UI"
                         onClick={e => {
                             e.stopPropagation();
-                            openToolWindow(tool.url);
+                            onOpenWebTool();
                         }}
                     >
                         Open UI

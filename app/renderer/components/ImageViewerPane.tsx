@@ -1,7 +1,9 @@
 // app/renderer/components/ImageViewerPane.tsx
 
 import React, { useEffect, useState } from "react";
+import { ToolConfig } from "../env";
 import Viewer from "react-viewer";
+
 import tiff from "tiff";
 import piexif from "piexifjs";
 
@@ -15,11 +17,7 @@ type ImageViewerPaneProps = {
     onClose: () => void;       // Called when viewer should close
 };
 
-type ImageFile = {
-    url: string;      // Data URL or file:// URL for the viewer
-    name: string;     // Filename
-    exif?: any;       // Optionally EXIF data, you can extract if desired
-};
+type ImageFile = { src: string; alt: string };
 
 const isTiff = (filename: string) =>
     /\.(tiff?|tif)$/i.test(filename);
@@ -27,46 +25,58 @@ const isTiff = (filename: string) =>
 const isImage = (filename: string) =>
     /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(filename);
 
-export default function ImageViewerPane({ folderPath, onClose }: ImageViewerPaneProps) {
+export default function ImageViewerPane({
+                                            tool,
+                                            folderPath,
+                                            onClose,
+                                        }: {
+    tool: ToolConfig | null;
+    folderPath: string | null;
+    onClose: () => void;
+}) {
     const [images, setImages] = useState<ImageFile[]>([]);
     const [visible, setVisible] = useState(true);
 
-    // Fetch image file list from main process on mount
     useEffect(() => {
-            async function loadImages() {
-                if (!window.electronAPI?.getImageFilesInFolder) {
-                    alert("Missing Electron API for file listing.");
-                    return;
-                }
-                const files: string[] = await window.electronAPI.getImageFilesInFolder(folderPath);
-                const imgFiles: ImageFile[] = [];
-                for (const file of files) {
-                    // Get ArrayBuffer from main process
-                    const buf: ArrayBuffer = await window.electronAPI.readImageFileAsArrayBuffer(folderPath, file);
-                    const blob = new Blob([buf]);
-                    const url = URL.createObjectURL(blob);
-                    imgFiles.push({ url, name: file });
-                }
-                setImages(imgFiles);
-            }
-            loadImages();
-            return () => {
-                // Clean up blobs on close
-                images.forEach(img => URL.revokeObjectURL(img.url));
-            };
-            // eslint-disable-next-line
-        }, [folderPath]);
+        if (!folderPath) return;
+        // Get file list from backend
+        (async () => {
+            const files: string[] = await (window.electronAPI as any).getImageFilesInFolder(folderPath);
+            setImages(
+                files.map(filename => ({
+                    src: `file://${folderPath.replace(/\\/g, "/")}/${filename}`,
+                    alt: filename,
+                }))
+            );
+        })();
+    }, [folderPath]);
 
     return (
-        <Viewer
-            visible={visible}
-            images={images.map(img => ({ src: img.url, alt: img.name }))}
-            activeIndex={0}
-            onClose={() => { setVisible(false); onClose(); }}
-            downloadable={true}
-            drag={true}
-            zIndex={4000}
-            // You can add more props from react-viewer as needed
-        />
+        <div style={{ height: "100%", width: "100%", background: "#111" }}>
+            <button
+                onClick={() => {
+                    setVisible(false);
+                    setTimeout(onClose, 250);
+                }}
+                className="absolute top-4 left-4 z-10 bg-gray-800 text-white px-4 py-2 rounded"
+            >
+                Back
+            </button>
+            <Viewer
+                visible={visible}
+                images={images}
+                onClose={() => {
+                    setVisible(false);
+                    setTimeout(onClose, 250);
+                }}
+                zIndex={9999}
+                drag={true}
+                noNavbar={false}
+                noToolbar={false}
+                scalable={true}
+                zoomable={true}
+                downloadable={true}
+            />
+        </div>
     );
 }

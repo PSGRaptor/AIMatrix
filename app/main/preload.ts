@@ -17,6 +17,4 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.on("tool-terminal-exit", (_event, code) => callback(code));
     },
     getImageFilesInFolder: (folder: string) => ipcRenderer.invoke("get-image-files-in-folder", folder),
-    readImageFileAsArrayBuffer: (folder: string, filename: string) =>
-        ipcRenderer.invoke("read-image-file-as-array-buffer", folder, filename),
 });

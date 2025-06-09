@@ -40,7 +40,7 @@ ipcMain.handle("get-tools", async () => {
     return tools;
 });
 
-ipcMain.handle("get-image-files-in-folder", async (_event, folder: string) => {
+ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
     if (!fs.existsSync(folder)) return [];
     return fs.readdirSync(folder)
         .filter(file => /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(file));
