@@ -1,10 +1,10 @@
 {
-  "name": "Stable Diffusion",
+  "name": "InvokeAI",
   "icon": "🧠",
-  "description": "AI image generator",
-  "toolRoot": "Y:/lobe-chat",
-  "url": "http://localhost:7860",
-  "outputFolder": "D:/_Outputs/SM-Stable%20Diffusion%20WebUI/",
-  "updateCommand": "Y:/lobe-chat/git pull",
-  "startCommand": "C:/AI/StableDiffusion/webui-user.bat"
+  "description": "InvokeAI image generator",
+  "toolRoot": "Y:/_invokeai",
+  "url": "http://127.0.0.1:9090",
+  "outputFolder": "D:/_Outputs/InvokeAI/images/",
+  "updateCommand": "",
+  "startCommand": "Y:/_invokeai/invoke.bat"
 }

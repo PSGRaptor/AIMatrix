@@ -3,11 +3,10 @@ import ToolCard from "../components/ToolCard";
 import ThemeToggle from "../components/ThemeToggle";
 import TerminalPane from "../components/TerminalPane";
 import ImageViewerPane from "../components/ImageViewerPane";
-import WebToolPane from "../components/WebToolPane";
 import { ToolConfig } from "../env";
 import { loadTools } from "../utils/loadTools";
 
-type QuickMenuType = "cards" | "imageViewer" | "terminal" | "webTool";
+type QuickMenuType = "cards" | "imageViewer" | "terminal";
 
 type MainViewProps = {
     openAboutModal: () => void;
@@ -28,11 +27,6 @@ export default function MainView({
     const [activeMenu, setActiveMenu] = useState<QuickMenuType>("cards");
     const [terminalTool, setTerminalTool] = useState<ToolConfig | null>(null);
     const [imageViewerTool, setImageViewerTool] = useState<ToolConfig | null>(null);
-    const [imageViewerFolder, setImageViewerFolder] = useState<string | null>(null);
-
-    // For Web UIs as tabs
-    const [openWebTools, setOpenWebTools] = useState<{ tool: ToolConfig; url: string }[]>([]);
-    const [activeWebTool, setActiveWebTool] = useState<{ tool: ToolConfig; url: string } | null>(null);
 
     useEffect(() => {
         async function fetchTools() {
@@ -46,7 +40,6 @@ export default function MainView({
         fetchTools();
     }, []);
 
-    // --- Handlers ---
     const handleStartTerminal = useCallback((tool: ToolConfig) => {
         setTerminalTool(tool);
         setActiveMenu("terminal");
@@ -54,16 +47,8 @@ export default function MainView({
 
     const handleOpenImageViewer = useCallback((tool: ToolConfig) => {
         setImageViewerTool(tool);
-        setImageViewerFolder(tool.outputFolder || null);
         setActiveMenu("imageViewer");
     }, []);
-
-    const handleOpenWebTool = useCallback((tool: ToolConfig) => {
-        const alreadyOpen = openWebTools.find(wt => wt.tool.name === tool.name);
-        if (!alreadyOpen) setOpenWebTools([...openWebTools, { tool, url: tool.url }]);
-        setActiveWebTool({ tool, url: tool.url });
-        setActiveMenu("webTool");
-    }, [openWebTools]);
 
     // Info pane resizer
     const handleDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -83,11 +68,13 @@ export default function MainView({
         window.addEventListener("mouseup", onMouseUp);
     };
 
-    // --- Center pane logic ---
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
-            <div className="grid gap-8" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+            <div
+                className="grid gap-8"
+                style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
+            >
                 {tools.length === 0 ? (
                     <div className="col-span-full text-gray-500 text-xl p-12 text-center">
                         No tools found. Please add .json files in <code>app/config/tools/</code>
@@ -100,39 +87,28 @@ export default function MainView({
                             onStartTerminal={() => handleStartTerminal(tool)}
                             onShowInfo={() => setActiveTool(tool)}
                             onOpenImageViewer={() => handleOpenImageViewer(tool)}
-                            onOpenWebTool={() => handleOpenWebTool(tool)}
                             active={activeTool?.name === tool.name}
                         />
                     ))
                 )}
             </div>
         );
-    } else if (activeMenu === "terminal" && terminalTool) {
+    } else if (activeMenu === "terminal") {
         centerPane = (
             <TerminalPane
                 tool={terminalTool}
                 onBack={() => setActiveMenu("cards")}
             />
         );
-    } else if (activeMenu === "imageViewer" && imageViewerTool) {
+    } else if (activeMenu === "imageViewer") {
         centerPane = (
             <ImageViewerPane
                 tool={imageViewerTool}
-                folderPath={imageViewerTool.outputFolder}
-                onClose={() => setActiveMenu("cards")}
-            />
-        );
-    } else if (activeMenu === "webTool" && activeWebTool) {
-        centerPane = (
-            <WebToolPane
-                url={activeWebTool.url}
                 onBack={() => setActiveMenu("cards")}
-                tool={activeWebTool.tool}
             />
         );
     }
 
-    // --- Quickmenu logic ---
     return (
         <div className="flex w-full h-full">
             {/* Quick Menu */}
@@ -141,7 +117,8 @@ export default function MainView({
                     <button
                         title="Cards"
                         aria-label="Show Tool Cards"
-                        className={`p-3 rounded-lg transition ${activeMenu === "cards" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""}`}
+                        className={`p-3 rounded-lg transition 
+                            ${activeMenu === "cards" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""}`}
                         onClick={() => setActiveMenu("cards")}
                     >
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
@@ -151,6 +128,7 @@ export default function MainView({
                             <rect x="3" y="14" width="7" height="7" rx="2" />
                         </svg>
                     </button>
+                    {/* Image Viewer */}
                     <button
                         title="Image Viewer"
                         aria-label="Open Image Viewer"
@@ -164,6 +142,7 @@ export default function MainView({
                             <path d="M21 19l-5.5-5.5c-.66-.66-1.74-.66-2.4 0L3 19" />
                         </svg>
                     </button>
+                    {/* Terminal */}
                     <button
                         title="Terminal"
                         aria-label="Open Terminal"
@@ -177,21 +156,6 @@ export default function MainView({
                             <path d="M16 15h2" />
                         </svg>
                     </button>
-                    {/* Dynamic tool web UIs */}
-                    {openWebTools.map(({ tool }) => (
-                        <button
-                            key={tool.name}
-                            title={tool.name}
-                            aria-label={`Open ${tool.name} UI`}
-                            className={`p-3 rounded-lg transition ${activeMenu === "webTool" && activeWebTool?.tool.name === tool.name ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""}`}
-                            onClick={() => {
-                                setActiveWebTool(openWebTools.find(wt => wt.tool.name === tool.name) || null);
-                                setActiveMenu("webTool");
-                            }}
-                        >
-                            <span className="text-3xl">{tool.icon}</span>
-                        </button>
-                    ))}
                 </div>
                 <div className="flex flex-col gap-4">
                     <ThemeToggle theme={theme} setTheme={setTheme} />

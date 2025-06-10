@@ -1,6 +1,6 @@
 import React from "react";
 import { ToolConfig } from "../env";
-import { runToolTerminal } from "../utils/ipc";
+import { openToolWindow } from "../utils/ipc";
 
 /**
  * ToolCard — Displays a tool and actions.
@@ -10,14 +10,12 @@ export default function ToolCard({
                                      onStartTerminal,
                                      onShowInfo,
                                      onOpenImageViewer,
-                                     onOpenWebTool,
                                      active,
                                  }: {
     tool: ToolConfig;
     onStartTerminal: () => void;
     onShowInfo: () => void;
     onOpenImageViewer: () => void;
-    onOpenWebTool: () => void;
     active?: boolean;
 }) {
     return (
@@ -70,7 +68,7 @@ export default function ToolCard({
                         title="Open Tool Web UI"
                         onClick={e => {
                             e.stopPropagation();
-                            onOpenWebTool();
+                            openToolWindow(tool.url);
                         }}
                     >
                         Open UI
@@ -79,7 +77,7 @@ export default function ToolCard({
                 {tool.outputFolder && (
                     <button
                         className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
-                        title="Open Image Output Folder"
+                        title="Open Outputs"
                         onClick={e => {
                             e.stopPropagation();
                             onOpenImageViewer();
@@ -88,6 +86,16 @@ export default function ToolCard({
                         Outputs
                     </button>
                 )}
+                <button
+                    className="px-3 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-sm"
+                    title="Stop Tool"
+                    onClick={e => {
+                        e.stopPropagation();
+                        window.electronAPI?.killToolProcess(tool.name);
+                    }}
+                >
+                    Stop
+                </button>
             </div>
         </div>
     );

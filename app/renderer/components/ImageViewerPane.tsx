@@ -1,42 +1,34 @@
 import React, { useEffect, useState } from "react";
-import Viewer from "react-viewer";
 import { ToolConfig } from "../env";
+import Viewer from "react-viewer";
+
+type Props = {
+    folderPath: string | null;
+    onClose: () => void;
+    tool?: ToolConfig | null;
+};
 
 type ImageFile = { src: string; alt: string };
 
-export default function ImageViewerPane({
-                                            tool,
-                                            folderPath,
-                                            onClose,
-                                        }: {
-    tool?: ToolConfig | null;
-    folderPath: string | null;
-    onClose: () => void;
-}) {
+export default function ImageViewerPane({ folderPath, onClose }: Props) {
     const [images, setImages] = useState<ImageFile[]>([]);
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        let revokeList: string[] = [];
         if (!folderPath) return;
         (async () => {
-            const files: string[] = await window.electronAPI.getImageFilesInFolder(folderPath);
-            const imageObjs: ImageFile[] = [];
-            for (const filename of files) {
-                // Read file as ArrayBuffer and convert to Blob URL
-                const buffer = await window.electronAPI.readImageFileAsArrayBuffer(folderPath, filename);
-                const blob = new Blob([new Uint8Array(buffer)]);
-                const url = URL.createObjectURL(blob);
-                imageObjs.push({ src: url, alt: filename });
-                revokeList.push(url);
-            }
-            setImages(imageObjs);
-            // cleanup on unmount
-            return () => { revokeList.forEach(url => URL.revokeObjectURL(url)); };
+            const files: string[] = await (window.electronAPI as any).getImageFilesInFolder(folderPath);
+            setImages(
+                files.map(filename => ({
+                    src: `file://${folderPath.replace(/\\/g, "/")}/${filename}`,
+                    alt: filename,
+                }))
+            );
         })();
-        // cleanup blob URLs
-        return () => { revokeList.forEach(url => URL.revokeObjectURL(url)); };
     }, [folderPath]);
+
+    // Show a message if no images found
+    const noImages = !images || images.length === 0;
 
     return (
         <div style={{ height: "100%", width: "100%", background: "#111" }}>
@@ -57,13 +49,19 @@ export default function ImageViewerPane({
                     setTimeout(onClose, 250);
                 }}
                 zIndex={9999}
-                drag
+                drag={true}
                 noNavbar={false}
                 noToolbar={false}
-                scalable
-                zoomable
-                downloadable
+                scalable={true}
+                zoomable={true}
+                downloadable={true}
+                customToolbar={() => []}
             />
+            {noImages && (
+                <div className="flex items-center justify-center h-full w-full absolute top-0 left-0 text-xl text-gray-400 bg-black bg-opacity-70 z-50">
+                    No images found in this folder.
+                </div>
+            )}
         </div>
     );
 }
