@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer } from "electron";
 contextBridge.exposeInMainWorld("electronAPI", {
     getTools: () => ipcRenderer.invoke("get-tools"),
     listImagesInFolder: (folder: string) => ipcRenderer.invoke("list-images-in-folder", folder),
-    runToolTerminal: (cmd: string, dir: string) => ipcRenderer.invoke("run-tool-terminal", cmd, dir),
+    runToolTerminal: (cmd: string, dir: string, toolName: string) => ipcRenderer.invoke("run-tool-terminal", cmd, dir, toolName),
     openToolWindow: (url: string) => ipcRenderer.invoke("open-tool-window", url),
     openImageViewer: (outputFolder: string) => ipcRenderer.invoke("open-output-folder", outputFolder),
     onToolTerminalData: (callback: (data: string) => void) => {

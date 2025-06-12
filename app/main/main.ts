@@ -1,13 +1,14 @@
 import { app, BrowserWindow, shell, ipcMain } from "electron";
 import * as path from "path";
 import * as fs from "fs";
-import * as child_process from "child_process";
+import * as os from "os";
+import * as pty from "node-pty"; // Use node-pty for interactive terminals
 import { loadTools } from "./loadTools";
 
-let runningProcesses: { [toolName: string]: child_process.ChildProcessWithoutNullStreams } = {};
 let mainWindow: BrowserWindow | null = null;
-// Track spawned tool processes
-const spawnedProcesses: Set<child_process.ChildProcess> = new Set();
+
+// Track running PTY processes per tool name
+const runningPtys: { [toolName: string]: pty.IPty } = {};
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -36,22 +37,15 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-    // Kill all spawned tool processes
-    for (const proc of spawnedProcesses) {
-        try {
-            if (process.platform === "win32") {
-                child_process.execSync(`taskkill /PID ${proc.pid} /T /F`);
-            } else {
-                proc.kill("SIGKILL");
-            }
-        } catch (e) { /* ignore */ }
+    // Kill all running ptys
+    for (const toolName in runningPtys) {
+        runningPtys[toolName].kill();
+        delete runningPtys[toolName];
     }
-    spawnedProcesses.clear();
 });
 
 ipcMain.handle("get-tools", async () => {
-    const tools = loadTools();
-    return tools;
+    return loadTools();
 });
 
 ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
@@ -68,54 +62,62 @@ ipcMain.handle("read-image-file-as-array-buffer", async (_event, folder: string,
 ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
     try {
         const files = fs.readdirSync(folder);
-        const images = files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
-        return images;
+        return files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
     } catch (e) {
         return [];
     }
 });
 
-/** Launches a tool process (.bat, .sh, .exe) and streams terminal output */
+// Launches a tool in a PTY and streams output
 ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: string, toolName: string) => {
-    // If a process for this tool is already running, kill it first
-    if (runningProcesses[toolName]) {
-        runningProcesses[toolName].kill();
-        delete runningProcesses[toolName];
+    // Kill any existing PTY for this tool
+    if (runningPtys[toolName]) {
+        runningPtys[toolName].kill();
+        delete runningPtys[toolName];
     }
-    const proc = child_process.spawn(startCommand, {
+
+    // Choose shell (always use cmd.exe for .bat/.cmd, bash for Linux)
+    const isWindows = os.platform() === "win32";
+    const shell = isWindows ? "cmd.exe" : "bash";
+    const shellArgs = isWindows
+        ? ["/c", startCommand] // '/c' runs then exits
+        : ["-c", startCommand];
+
+    // Spawn the PTY
+    const ptyProcess = pty.spawn(shell, shellArgs, {
+        name: "xterm-color",
         cwd: workingDir,
-        shell: true,
-        detached: false,
-        stdio: "pipe"
+        env: process.env,
+        cols: 100,
+        rows: 40,
     });
 
-    runningProcesses[toolName] = proc;
+    runningPtys[toolName] = ptyProcess;
 
-    proc.stdout.on("data", (data) => {
-        event.sender.send("tool-terminal-data", data.toString());
+    // Forward output to renderer
+    ptyProcess.onData(data => {
+        event.sender.send("tool-terminal-data", data);
     });
-    proc.stderr.on("data", (data) => {
-        event.sender.send("tool-terminal-data", data.toString());
-    });
-    proc.on("close", (code) => {
-        event.sender.send("tool-terminal-exit", code);
-        delete runningProcesses[toolName];
+    ptyProcess.onExit(({ exitCode }) => {
+        event.sender.send("tool-terminal-exit", exitCode);
+        delete runningPtys[toolName];
     });
 
     return { success: true };
 });
 
-// Listen for terminal input from renderer
+// Receives input from renderer and writes to PTY
 ipcMain.on("terminal-input", (_event, toolName: string, data: string) => {
-    const proc = runningProcesses[toolName];
-    if (proc && proc.stdin.writable) {
-        proc.stdin.write(data);
+    const ptyProc = runningPtys[toolName];
+    if (ptyProc) {
+        ptyProc.write(data);
     }
 });
 
-/** Opens tool's web UI in a dedicated Electron window */
+// Tool UI window (unchanged)
 ipcMain.handle("open-tool-window", async (_event, url: string) => {
     if (!url) return { success: false, error: "No URL provided" };
+
     const toolWin = new BrowserWindow({
         width: 1280,
         height: 900,
@@ -138,12 +140,12 @@ ipcMain.handle("open-output-folder", async (_event, folderPath: string) => {
     return { success: false, error: "No folder path provided" };
 });
 
+// Stop a running tool (stop/kill button)
 ipcMain.handle("kill-tool-process", (_event, toolName: string) => {
-    console.log("Process call to kill was executed");
-    const proc = runningProcesses[toolName];
-    if (proc) {
-        proc.kill();
-        delete runningProcesses[toolName];
+    const ptyProc = runningPtys[toolName];
+    if (ptyProc) {
+        ptyProc.kill();
+        delete runningPtys[toolName];
         return { success: true };
     }
     return { success: false, error: "Process not running" };
