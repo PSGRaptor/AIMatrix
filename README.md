@@ -62,16 +62,24 @@ AIMatrix/
 │  README.md
 │
 ├─ app/
+|  ├─config
+│  │    app-settings.json        # Settings
+│  │    tools.json                # Tool Template file
+│  │  ├─ tools/
+│  │  │    comfyui.json          # Comfy UI Tool config file
+│  │  │    facefusion.json       # FaceFusion Tool config file
+│  │  │    invoke.json           # InvokeAI Tool config file
 │  ├─ main/
 │  │    main.ts                  # Electron main process (window mgmt, security)
+│  │    loadTools.ts             # Electron Load Tools types
 │  │    preload.ts               # Electron preload for context bridge
 │  │    electron-env.d.ts        # Type definitions for Electron main
 │  │
 │  ├─ renderer/
-│  │    App.tsx                  # Main React app shell
-│  │    main.tsx                 # Renderer entry point
-│  │    index.html               # HTML template
+│  │    App.tsx                  # Main cards/info layout
 │  │    env.d.ts                 # Renderer TS environment types
+│  │    index.html               # 
+│  │    main.tsx                 # 
 │  │
 │  │  ├─ assets/
 │  │  │    app-logo.svg          # App logo (SVG)
@@ -80,17 +88,24 @@ AIMatrix/
 │  │  │    AboutModal.tsx        # About modal component
 │  │  │    ConfigModal.tsx       # Tool config modal
 │  │  │    QuickMenu.tsx         # Left sidebar menu
-│  │  │    ToolCard.tsx          # Tool card UI
-│  │  │
-│  │  ├─ views/
-│  │  │    MainView.tsx          # Main cards/info layout
+│  │  |    ImageViewerPane.tsx   # Window to be used for our Image Viewer
+│  │  |    QuickMenu.tsx         # Used for our Quickmenu Left main window Pane
+│  │  |    TerminalPane.tsx      # Used for our Terminal center and right pane combined
+│  │  |    ThemeToggle.tsx       # Dark/Light theme toggle code
+│  │  |    ToolCard.tsx          # ToolCard Code
+│  │  |    WebToolPane.tsx       # WebToolPane Code
 │  │  │
 │  │  ├─ styles/
 │  │  │    main.css              # Tailwind + custom styles
+│  │  │
+│  │  ├─ utils/
+│  │  │    ipc.ts                # 
+│  │  |    loadTools.ts          # 
+│  │  │
+│  │  ├─ views/
+│  │  │    MainView.tsx          # Main layout
+│  │  │
 │  │
-│  ├─ config/
-│  │    tools.json               # Tool definitions/config
-│  │    app-settings.json        # App UI & general settings
 │
 └─ .github/
     └─ workflows/
