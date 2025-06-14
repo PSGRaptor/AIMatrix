@@ -3,18 +3,21 @@ import { ToolConfig } from "../env";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
 
+// --- Strongly Typed Props ---
 type TerminalPaneProps = {
     tool: ToolConfig | null;
     onBack: () => void;
 };
 
-export default function TerminalPane({ tool, onBack }: TerminalPaneProps) {
+// --- TerminalPane Component ---
+const TerminalPane: React.FC<TerminalPaneProps> = ({ tool, onBack }) => {
     const termRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<Terminal | null>(null);
 
     useEffect(() => {
         if (!tool || !termRef.current) return;
 
+        // Dispose previous xterm if exists
         if (xtermRef.current) {
             xtermRef.current.dispose();
         }
@@ -22,21 +25,21 @@ export default function TerminalPane({ tool, onBack }: TerminalPaneProps) {
         const xterm = new Terminal({
             fontSize: 16,
             theme: { background: "#101014", foreground: "#fff" },
-            cursorBlink: true, // <-- Make cursor blink
+            cursorBlink: true,
         });
         xterm.open(termRef.current);
         xterm.writeln(`Launching: ${tool.startCommand} (in ${tool.toolRoot})...`);
 
-        // Run process with tool.name as key
+        // Start the tool process (custom electronAPI must provide these methods)
         window.electronAPI.runToolTerminal(tool.startCommand, tool.toolRoot, tool.name);
 
-        // Display output from main process
+        // Pipe terminal output from backend
         const dataHandler = (data: string) => xterm.write(data);
         const exitHandler = (code: number) => xterm.writeln(`\r\n[Process exited with code ${code}]`);
         window.electronAPI.onToolTerminalData(dataHandler);
         window.electronAPI.onToolTerminalExit(exitHandler);
 
-        // Handle user input and send to main process
+        // Pipe user input from xterm to backend
         const handleUserInput = (data: string) => {
             window.electronAPI.sendTerminalInput(tool.name, data);
         };
@@ -44,6 +47,7 @@ export default function TerminalPane({ tool, onBack }: TerminalPaneProps) {
 
         xtermRef.current = xterm;
 
+        // Cleanup handlers and xterm on unmount/change
         return () => {
             xterm.dispose();
             window.electronAPI.onToolTerminalData(() => {});
@@ -70,7 +74,20 @@ export default function TerminalPane({ tool, onBack }: TerminalPaneProps) {
                 </button>
                 <span className="ml-4 text-lg font-semibold">{tool.name} Terminal</span>
             </div>
-            <div ref={termRef} style={{ height: "calc(100% - 40px)", background: "#101014", borderRadius: 8, padding: 4, flex: 1 }} />
+            <div
+                ref={termRef}
+                style={{
+                    height: "calc(100% - 40px)",
+                    background: "#101014",
+                    borderRadius: 8,
+                    padding: 4,
+                    flex: 1,
+                    minHeight: 200,
+                    minWidth: 0,
+                }}
+            />
         </div>
     );
-}
+};
+
+export default TerminalPane;

@@ -1,9 +1,15 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+console.log("CANARY: Electron main.ts started!", __dirname, process.cwd());
+import {app, BrowserWindow, shell, ipcMain, dialog} from "electron";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import * as pty from "node-pty"; // Use node-pty for interactive terminals
 import { loadTools } from "./loadTools";
+
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
+app.disableHardwareAcceleration();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -18,22 +24,31 @@ function createWindow() {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: true
+            sandbox: false
         }
     });
 
     if (process.env.NODE_ENV === "development") {
+        console.log("Loading URL:", "http://localhost:5173");
+        //mainWindow.loadURL("data:text/html,<h1>Hello from Electron</h1>");
         mainWindow.loadURL("http://localhost:5173");
-        mainWindow.webContents.openDevTools();
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
+        mainWindow.webContents.on('did-finish-load', () => {
+            console.log('Window finished loading.');
+        });
+        mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+            console.error('Window failed to load:', errorCode, errorDescription);
+        });
     } else {
         mainWindow.loadFile(path.join(__dirname, "../../renderer/dist/index.html"));
     }
 }
-
+console.log('Electron app is starting');
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
+    console.log('Electron app killed');
 });
 
 app.on("before-quit", () => {
@@ -45,6 +60,7 @@ app.on("before-quit", () => {
 });
 
 ipcMain.handle("get-tools", async () => {
+    console.log('Tools loaded');
     return loadTools();
 });
 
@@ -52,17 +68,20 @@ ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
     if (!fs.existsSync(folder)) return [];
     return fs.readdirSync(folder)
         .filter(file => /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(file));
+    console.log('get-image-files-in-folder');
 });
 
 ipcMain.handle("read-image-file-as-array-buffer", async (_event, folder: string, filename: string) => {
     const fullPath = path.join(folder, filename);
-    return fs.readFileSync(fullPath).buffer;
+       return fs.readFileSync(fullPath).buffer;
+       console.log('read-image-file-as-array-buffer');
 });
 
 ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
     try {
         const files = fs.readdirSync(folder);
         return files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
+        console.log('list-images-in-folder');
     } catch (e) {
         return [];
     }
@@ -117,6 +136,7 @@ ipcMain.on("terminal-input", (_event, toolName: string, data: string) => {
 // Tool UI window (unchanged)
 ipcMain.handle("open-tool-window", async (_event, url: string) => {
     if (!url) return { success: false, error: "No URL provided" };
+    console.log('Preload path:', path.join(__dirname, "preload.js"));
 
     const toolWin = new BrowserWindow({
         width: 1280,
@@ -125,6 +145,7 @@ ipcMain.handle("open-tool-window", async (_event, url: string) => {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
             nodeIntegration: false,
+            sandbox: false
         }
     });
     toolWin.loadURL(url);
@@ -149,4 +170,27 @@ ipcMain.handle("kill-tool-process", (_event, toolName: string) => {
         return { success: true };
     }
     return { success: false, error: "Process not running" };
+});
+
+ipcMain.handle('getUserDataPath', async () => app.getPath('userData'));
+
+// Optionally expose dialog for renderer to pick icons
+ipcMain.handle('showOpenDialog', async () => {
+    return await dialog.showOpenDialog({
+        title: 'Select Icon',
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'ico', 'svg'] }],
+        properties: ['openFile']
+    });
+});
+
+ipcMain.handle('tools:copyIcon', async (_, srcPath: string) => {
+    if (!srcPath) throw new Error('No icon selected');
+    const iconsDir = path.join(app.getPath('userData'), 'icons');
+    if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+    const ext = path.extname(srcPath);
+    const destName = `icon_${Date.now()}${ext}`;
+    const destPath = path.join(iconsDir, destName);
+    fs.copyFileSync(srcPath, destPath);
+    // Return relative path
+    return `icons/${destName}`;
 });

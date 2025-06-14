@@ -11,6 +11,7 @@
     "build": "vite build && tsc -p app/main/",
     "start": "electron .",
     "build:main": "tsc --project tsconfig.main.json",
+    "clean:main": "rimraf app/main/*.js",
     "watch:main": "tsc --watch --project tsconfig.main.json"
   },
   "dependencies": {

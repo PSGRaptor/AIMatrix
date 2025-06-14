@@ -1,5 +1,24 @@
 import { ToolConfig } from "../env";
 
+// Tool type, can be placed at the top of app/renderer/components/ConfigModal.tsx or utils/loadTools.ts
+
+export interface Tool {
+    name: string;
+    icon: string;           // emoji or path to icon/image (relative to userData/icons/)
+    description: string;
+    toolRoot: string;
+    url: string;
+    outputFolder: string;
+    updateCommand?: string;
+    startCommand: string;
+    createdAt?: string;
+    lastModified?: string;
+    platforms?: string[];
+    author?: string;
+    notes?: string;
+}
+
+
 /**
  * Loads all tool configs via Electron's API.
  */

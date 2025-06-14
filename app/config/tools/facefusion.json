@@ -5,6 +5,12 @@
   "toolRoot": "Y:/FaceFusion",
   "url": "http://127.0.0.1:7860",
   "outputFolder": "D:/_Outputs/FaceFusion",
-  "updateCommand": "Y:/lobe-chat/git pull",
-  "startCommand": "Y:/FaceFusion/start-ff.bat"
+  "updateCommand": "",
+  "startCommand": "Y:/FaceFusion/start-ff.bat",
+  "createdAt": "2025-06-14T10:00:00Z",
+  "lastModified": "2025-06-14T10:00:00Z",
+  "platforms": ["win32"],
+  "author": "mwlak",
+  "notes": ""
 }
+

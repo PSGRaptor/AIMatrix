@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import MainView from "./views/MainView";
 import AboutModal from "./components/AboutModal";
-import ConfigModal from "./components/ConfigModal";
 
 export default function App() {
     const [showAbout, setShowAbout] = useState(false);
-    const [showConfig, setShowConfig] = useState(false);
     const [theme, setTheme] = useState<"dark" | "light">(() => {
         const stored = localStorage.getItem("aimatrix-theme");
         return stored === "light" ? "light" : "dark";
@@ -30,22 +28,17 @@ export default function App() {
                     <button onClick={() => setShowAbout(true)} className="hover:underline">
                         About
                     </button>
-                    <button onClick={() => setShowConfig(true)} className="hover:underline">
-                        Settings
-                    </button>
                 </nav>
                 <span className="ml-auto text-xs text-gray-400">Alpha Build</span>
             </header>
             <main className="flex flex-1 min-h-0">
                 <MainView
                     openAboutModal={() => setShowAbout(true)}
-                    openConfigModal={() => setShowConfig(true)}
                     theme={theme}
                     setTheme={setTheme}
                 />
             </main>
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
-            {showConfig && <ConfigModal onClose={() => setShowConfig(false)} />}
         </div>
     );
 }

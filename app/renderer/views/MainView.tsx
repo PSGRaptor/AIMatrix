@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import QuickMenu from '../components/QuickMenu';
+import ConfigModal, { Tool } from '../components/ConfigModal';
 import ToolCard from "../components/ToolCard";
 import ThemeToggle from "../components/ThemeToggle";
 import TerminalPane from "../components/TerminalPane";
@@ -10,14 +12,12 @@ type QuickMenuType = "cards" | "imageViewer" | "terminal";
 
 type MainViewProps = {
     openAboutModal: () => void;
-    openConfigModal: () => void;
     theme: "dark" | "light";
     setTheme: (t: "dark" | "light") => void;
 };
 
 export default function MainView({
                                      openAboutModal,
-                                     openConfigModal,
                                      theme,
                                      setTheme,
                                  }: MainViewProps) {
@@ -28,6 +28,11 @@ export default function MainView({
     const [terminalTool, setTerminalTool] = useState<ToolConfig | null>(null);
     const [imageViewerTool, setImageViewerTool] = useState<ToolConfig | null>(null);
 
+    // === MODAL STATE for Add/Edit Tools ===
+    const [configModalOpen, setConfigModalOpen] = useState(false);
+    const [editTool, setEditTool] = useState<Tool | null>(null);
+
+    // Load tools at mount or after saving
     useEffect(() => {
         async function fetchTools() {
             try {
@@ -38,7 +43,7 @@ export default function MainView({
             }
         }
         fetchTools();
-    }, []);
+    }, [configModalOpen]); // reload on modal close/save
 
     const handleStartTerminal = useCallback((tool: ToolConfig) => {
         setTerminalTool(tool);
@@ -68,6 +73,19 @@ export default function MainView({
         window.addEventListener("mouseup", onMouseUp);
     };
 
+    // Handler for opening modal to add a tool
+    const handleAddTool = () => {
+        setEditTool(null);
+        setConfigModalOpen(true);
+    };
+
+    // Handler for editing a tool (you can use this from ToolCard if you add an edit button)
+    const handleEditTool = (tool: Tool) => {
+        setEditTool(tool);
+        setConfigModalOpen(true);
+    };
+
+    // Main center pane switching logic
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
@@ -88,6 +106,8 @@ export default function MainView({
                             onShowInfo={() => setActiveTool(tool)}
                             onOpenImageViewer={() => handleOpenImageViewer(tool)}
                             active={activeTool?.name === tool.name}
+                            // Add this if you want in-card editing:
+                            // onEditClick={() => handleEditTool(tool)}
                         />
                     ))
                 )}
@@ -112,63 +132,7 @@ export default function MainView({
     return (
         <div className="flex w-full h-full">
             {/* Quick Menu */}
-            <aside className="flex flex-col justify-between items-center w-[120px] bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-white py-6 border-r border-gray-200 dark:border-gray-900 transition-colors duration-300">
-                <div className="flex flex-col gap-4">
-                    <button
-                        title="Cards"
-                        aria-label="Show Tool Cards"
-                        className={`p-3 rounded-lg transition 
-                            ${activeMenu === "cards" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""}`}
-                        onClick={() => setActiveMenu("cards")}
-                    >
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
-                            <rect x="3" y="3" width="7" height="7" rx="2" />
-                            <rect x="14" y="3" width="7" height="7" rx="2" />
-                            <rect x="14" y="14" width="7" height="7" rx="2" />
-                            <rect x="3" y="14" width="7" height="7" rx="2" />
-                        </svg>
-                    </button>
-                    {/* Image Viewer */}
-                    <button
-                        title="Image Viewer"
-                        aria-label="Open Image Viewer"
-                        className={`p-3 rounded-lg transition ${activeMenu === "imageViewer" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""} ${!imageViewerTool ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
-                        onClick={() => imageViewerTool && setActiveMenu("imageViewer")}
-                        disabled={!imageViewerTool}
-                    >
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
-                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                            <circle cx="8.5" cy="10.5" r="1.5" />
-                            <path d="M21 19l-5.5-5.5c-.66-.66-1.74-.66-2.4 0L3 19" />
-                        </svg>
-                    </button>
-                    {/* Terminal */}
-                    <button
-                        title="Terminal"
-                        aria-label="Open Terminal"
-                        className={`p-3 rounded-lg transition ${activeMenu === "terminal" ? "bg-blue-100 text-blue-700 dark:bg-gray-800 dark:text-blue-400" : ""} ${!terminalTool ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
-                        onClick={() => terminalTool && setActiveMenu("terminal")}
-                        disabled={!terminalTool}
-                    >
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
-                            <rect x="3" y="4" width="18" height="16" rx="2" />
-                            <path d="M8 9l4 4-4 4" />
-                            <path d="M16 15h2" />
-                        </svg>
-                    </button>
-                </div>
-                <div className="flex flex-col gap-4">
-                    <ThemeToggle theme={theme} setTheme={setTheme} />
-                    <button title="Settings" aria-label="Open Settings"
-                            onClick={openConfigModal}
-                            className="p-3 rounded-lg transition">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="3" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.91V12a2 2 0 1 1 0-4v-.09a1.65 1.65 0 0 0 .33-1.82l-.06-.06A2 2 0 1 1 6.1 3.1l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c.14.39.39.74 1 .74a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82v.09c0 .37.14.72.39.98" />
-                        </svg>
-                    </button>
-                </div>
-            </aside>
+            <QuickMenu onConfigClick={handleAddTool} />
             {/* Center */}
             <div
                 className="flex-1 p-8 overflow-y-auto bg-white text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300"
@@ -201,7 +165,7 @@ export default function MainView({
                             <p className="text-gray-700 dark:text-gray-300 mb-4">{activeTool.description}</p>
                             <button
                                 className="mt-4 px-4 py-2 bg-blue-700 rounded hover:bg-blue-800 transition text-white"
-                                onClick={openConfigModal}
+                                onClick={() => handleEditTool(activeTool as Tool)}
                             >
                                 Edit Tool Settings
                             </button>
@@ -211,6 +175,13 @@ export default function MainView({
                     )}
                 </div>
             </aside>
+            {/* Tool Config Modal */}
+            <ConfigModal
+                isOpen={configModalOpen}
+                onClose={() => setConfigModalOpen(false)}
+                initialTool={editTool}
+                onSave={() => setConfigModalOpen(false)}
+            />
         </div>
     );
 }

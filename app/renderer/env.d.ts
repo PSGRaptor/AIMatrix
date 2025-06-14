@@ -16,6 +16,9 @@ export interface ElectronAPI {
     onToolTerminalData: (cb: (data: string) => void) => void;
     onToolTerminalExit: (cb: (code: number) => void) => void;
     startTool: (startCommand: string, workingDir: string) => Promise<{ success: boolean; error?: string }>;
+    getUserDataPath: () => Promise<string>;
+    showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+    copyIcon: (filePath: string) => Promise<string>;
 }
 declare global {
     interface Window {

@@ -6,5 +6,11 @@
   "url": "http://127.0.0.1:8188",
   "outputFolder": "D:/_Outputs/SM-ComfyUI",
   "updateCommand": "",
-  "startCommand": "Y:/_ComfyUI_windows_portable/run_nvidia_gpu.bat"
+  "startCommand": "Y:/_ComfyUI_windows_portable/run_nvidia_gpu.bat",
+  "createdAt": "2025-06-14T10:00:00Z",
+  "lastModified": "2025-06-14T10:00:00Z",
+  "platforms": ["win32"],
+  "author": "mwlak",
+  "notes": ""
 }
+

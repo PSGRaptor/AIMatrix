@@ -23,3 +23,9 @@ export async function openImageViewer(outputFolder: string) {
     }
     alert(`Would open folder: ${outputFolder}`);
 }
+
+// app/renderer/utils/ipc.ts
+export const getUserDataPath = () =>
+    (window as any).electronAPI?.getUserDataPath
+        ? (window as any).electronAPI.getUserDataPath()
+        : Promise.resolve('');

@@ -1,8 +1,8 @@
-// TypeScript declaration for Electron APIs available in preload
+// app/main/electron-env.d.ts
 export {};
 
 declare global {
     interface Window {
-        electronAPI?: any;
+      //  electronAPI: import('./env').ElectronAPI;
     }
 }

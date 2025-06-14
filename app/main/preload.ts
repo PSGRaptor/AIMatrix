@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("electronAPI", {
+    //getUserDataPath: () => ipcRenderer.invoke('getUserDataPath'),
     getTools: () => ipcRenderer.invoke("get-tools"),
     listImagesInFolder: (folder: string) => ipcRenderer.invoke("list-images-in-folder", folder),
     runToolTerminal: (cmd: string, dir: string, toolName: string) => ipcRenderer.invoke("run-tool-terminal", cmd, dir, toolName),
@@ -18,4 +19,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     readImageFileAsArrayBuffer: (folder: string, filename: string) => ipcRenderer.invoke("read-image-file-as-array-buffer", folder, filename),
     sendTerminalInput: (toolName: string, data: string) => ipcRenderer.send("terminal-input", toolName, data),
     killToolProcess: (toolName: string) => ipcRenderer.invoke("kill-tool-process", toolName),
+    // Optional, for general-purpose bridge:
+    invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
 });

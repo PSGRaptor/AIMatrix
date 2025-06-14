@@ -2,40 +2,42 @@ import React, { useEffect, useState } from "react";
 import { ToolConfig } from "../env";
 import Viewer from "react-viewer";
 
-type Props = {
-    folderPath: string | null;
-    onClose: () => void;
-    tool?: ToolConfig | null;
+type ImageViewerPaneProps = {
+    tool: ToolConfig | null;
+    onBack: () => void;
 };
 
 type ImageFile = { src: string; alt: string };
 
-export default function ImageViewerPane({ folderPath, onClose }: Props) {
+const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
     const [images, setImages] = useState<ImageFile[]>([]);
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        if (!folderPath) return;
+        if (!tool || !tool.outputFolder) return;
         (async () => {
-            const files: string[] = await (window.electronAPI as any).getImageFilesInFolder(folderPath);
-            setImages(
-                files.map(filename => ({
-                    src: `file://${folderPath.replace(/\\/g, "/")}/${filename}`,
-                    alt: filename,
-                }))
-            );
+            try {
+                const files: string[] = await (window.electronAPI as any).getImageFilesInFolder(tool.outputFolder);
+                setImages(
+                    files.map(filename => ({
+                        src: `file://${tool.outputFolder.replace(/\\/g, "/")}/${filename}`,
+                        alt: filename,
+                    }))
+                );
+            } catch (e) {
+                setImages([]);
+            }
         })();
-    }, [folderPath]);
+    }, [tool]);
 
-    // Show a message if no images found
     const noImages = !images || images.length === 0;
 
     return (
-        <div style={{ height: "100%", width: "100%", background: "#111" }}>
+        <div style={{ height: "100%", width: "100%", background: "#111", position: "relative" }}>
             <button
                 onClick={() => {
                     setVisible(false);
-                    setTimeout(onClose, 250);
+                    setTimeout(onBack, 250);
                 }}
                 className="absolute top-4 left-4 z-10 bg-gray-800 text-white px-4 py-2 rounded"
             >
@@ -46,7 +48,7 @@ export default function ImageViewerPane({ folderPath, onClose }: Props) {
                 images={images}
                 onClose={() => {
                     setVisible(false);
-                    setTimeout(onClose, 250);
+                    setTimeout(onBack, 250);
                 }}
                 zIndex={9999}
                 drag={true}
@@ -64,4 +66,6 @@ export default function ImageViewerPane({ folderPath, onClose }: Props) {
             )}
         </div>
     );
-}
+};
+
+export default ImageViewerPane;
