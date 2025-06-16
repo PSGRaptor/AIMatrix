@@ -1,147 +1,239 @@
 import React, { useState, useEffect } from "react";
-
-// Tool type, can be placed at the top of app/renderer/components/ConfigModal.tsx or utils/loadTools.ts
-
-export interface Tool {
-    name: string;
-    icon: string;
-    description: string;
-    toolRoot: string;
-    url: string;
-    outputFolder: string;
-    updateCommand?: string;
-    startCommand: string;
-    createdAt?: string;
-    lastModified?: string;
-    platforms?: string[];
-    author?: string;
-    notes?: string;
-}
+import type { ToolConfig } from "../env";
 
 type Props = {
     isOpen: boolean;
     onClose: () => void;
-    initialTool?: Tool | null;
+    initialTool?: ToolConfig | null;
     onSave: () => void;
 };
 
-const defaultTool: Tool = {
-    name: '',
-    icon: '',
-    description: '',
-    toolRoot: '',
-    url: '',
-    outputFolder: '',
-    updateCommand: '',
-    startCommand: '',
+const defaultTool: ToolConfig = {
+    name: "",
+    icon: "",
+    description: "",
+    toolRoot: "",
+    url: "",
+    outputFolder: "",
+    updateCommand: "",
+    startCommand: "",
 };
 
 const ConfigModal: React.FC<Props> = ({ isOpen, onClose, initialTool, onSave }) => {
-    const [tool, setTool] = useState<Tool>(initialTool ?? defaultTool);
-    const [iconPreview, setIconPreview] = useState<string>('');
-    const [error, setError] = useState('');
+    const [tool, setTool] = useState<ToolConfig>(initialTool ?? defaultTool);
+    const [iconPreview, setIconPreview] = useState<string>("");
+    const [error, setError] = useState<string>("");
     const [saving, setSaving] = useState(false);
 
-    // Access electronAPI safely!
-    const electronAPI = (window as any).electronAPI;
-
+    // Reset form each open
     useEffect(() => {
         setTool(initialTool ?? defaultTool);
-        setIconPreview(initialTool?.icon ?? '');
-        setError('');
+        setIconPreview(initialTool?.icon ?? "");
+        setError("");
     }, [isOpen, initialTool]);
 
-    // Update field handler
+    // Field change handler
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setTool({ ...tool, [e.target.name]: e.target.value });
-        if (e.target.name === 'icon') setIconPreview(e.target.value);
+        const { name, value } = e.target;
+        setTool((prev) => ({ ...prev, [name]: value }));
+        if (name === "icon") setIconPreview(value);
     };
 
-    // Icon picker using Electron dialog
+    // Browse dialogs
     const handleIconPick = async () => {
-        const { canceled, filePaths } = await electronAPI.invoke('showOpenDialog');
+        const { canceled, filePaths } = await window.electronAPI.showOpenDialog();
         if (!canceled && filePaths[0]) {
-            const relPath = await electronAPI.invoke('tools:copyIcon', filePaths[0]);
-            setTool(t => ({ ...t, icon: relPath }));
-            // Icon preview uses local file path
-            const userData = await electronAPI.invoke('getUserDataPath');
+            const relPath = await window.electronAPI.toolsCopyIcon(filePaths[0]);
+            setTool((prev) => ({ ...prev, icon: relPath }));
+            const userData = await window.electronAPI.getUserDataPath();
             setIconPreview(`file://${userData}/${relPath}`);
         }
     };
+    const handleRootPick = async () => {
+        const { canceled, filePaths } = await window.electronAPI.showOpenDialog();
+        if (!canceled && filePaths[0]) setTool((prev) => ({ ...prev, toolRoot: filePaths[0] }));
+    };
+    const handleOutputPick = async () => {
+        const { canceled, filePaths } = await window.electronAPI.showOpenDialog();
+        if (!canceled && filePaths[0]) setTool((prev) => ({ ...prev, outputFolder: filePaths[0] }));
+    };
 
-    // Save tool config
+    // Save handler
     const handleSave = async () => {
         setSaving(true);
-        setError('');
-        if (!tool.name || !tool.icon || !tool.description || !tool.toolRoot || !tool.url || !tool.outputFolder || !tool.startCommand) {
-            setError('Please fill all required fields.');
+        setError("");
+        if (
+            !tool.name ||
+            !tool.icon ||
+            !tool.description ||
+            !tool.toolRoot ||
+            !tool.url ||
+            !tool.outputFolder ||
+            !tool.startCommand
+        ) {
+            setError("Please fill all required fields.");
             setSaving(false);
             return;
         }
         try {
-            await electronAPI.invoke('tools:save', tool);
+            await window.electronAPI.toolsSave(tool);
             setSaving(false);
             onSave();
             onClose();
-        } catch (e) {
-            setError(`Failed to save: ${e}`);
+        } catch (e: any) {
+            setError(`Failed to save: ${e.message ?? e}`);
             setSaving(false);
         }
     };
 
     if (!isOpen) return null;
+
     return (
-        <div className="modal-backdrop">
-            <div className="modal-window">
-                <div className="modal-header">
-                    <h2>{initialTool ? 'Edit Tool' : 'Add New Tool'}</h2>
-                    <button onClick={onClose} aria-label="Close">&times;</button>
-                </div>
-                <div className="modal-content">
-                    <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
-                        <label>Tool Name *<input name="name" value={tool.name} onChange={handleChange} required /></label>
-                        <label>
-                            Tool Icon / Image *
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
-                                <input name="icon" value={tool.icon} onChange={handleChange} placeholder="Emoji or icon path" required />
-                                <button type="button" onClick={handleIconPick}>Browse...</button>
-                                {iconPreview && (
-                                    iconPreview.startsWith('file://') ?
-                                        <img src={iconPreview} alt="Icon preview" style={{ width: 32, height: 32 }} /> :
-                                        <span style={{ fontSize: 32 }}>{iconPreview}</span>
-                                )}
-                            </div>
-                        </label>
-                        <label>Description *<textarea name="description" value={tool.description} onChange={handleChange} required /></label>
-                        <label>Tool Root Folder *<input name="toolRoot" value={tool.toolRoot} onChange={handleChange} required /></label>
-                        <label>Tool URL *<input name="url" value={tool.url} onChange={handleChange} required /></label>
-                        <label>Output Folder *<input name="outputFolder" value={tool.outputFolder} onChange={handleChange} required /></label>
-                        <label>Update Command<input name="updateCommand" value={tool.updateCommand || ''} onChange={handleChange} /></label>
-                        <label>Start Command *<input name="startCommand" value={tool.startCommand} onChange={handleChange} required /></label>
-                        <label>Notes<textarea name="notes" value={tool.notes || ''} onChange={handleChange} /></label>
-                        {error && <div className="error">{error}</div>}
-                        <div className="modal-actions">
-                            <button type="button" onClick={onClose}>Cancel</button>
-                            <button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Tool'}</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full border border-gray-300 dark:border-gray-700 p-6 relative">
+                <button
+                    className="absolute top-4 right-4 text-2xl text-gray-400 hover:text-red-500"
+                    aria-label="Close"
+                    onClick={onClose}
+                >&times;</button>
+                <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+                    {initialTool ? "Edit Tool" : "Add New Tool"}
+                </h2>
+                <form
+                    onSubmit={e => { e.preventDefault(); handleSave(); }}
+                    className="flex flex-col gap-5"
+                >
+                    <div>
+                        <label className="block font-semibold mb-1">Tool Name *</label>
+                        <input
+                            name="name"
+                            value={tool.name}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Tool Icon / Image *</label>
+                        <div className="flex gap-3 items-center">
+                            <input
+                                name="icon"
+                                value={tool.icon}
+                                onChange={handleChange}
+                                placeholder="Emoji or icon path"
+                                required
+                                className="flex-1 px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleIconPick}
+                                className="px-3 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                            >
+                                Browse
+                            </button>
+                            {iconPreview && (
+                                iconPreview.startsWith("file://") ?
+                                    <img src={iconPreview} alt="Icon preview" className="w-8 h-8 rounded" /> :
+                                    <span className="text-2xl">{iconPreview}</span>
+                            )}
                         </div>
-                    </form>
-                </div>
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Description *</label>
+                        <textarea
+                            name="description"
+                            value={tool.description}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Tool Root Folder *</label>
+                        <div className="flex gap-3 items-center">
+                            <input
+                                name="toolRoot"
+                                value={tool.toolRoot}
+                                onChange={handleChange}
+                                required
+                                className="flex-1 px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleRootPick}
+                                className="px-3 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                            >
+                                Browse
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Tool URL *</label>
+                        <input
+                            name="url"
+                            value={tool.url}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Output Folder *</label>
+                        <div className="flex gap-3 items-center">
+                            <input
+                                name="outputFolder"
+                                value={tool.outputFolder}
+                                onChange={handleChange}
+                                required
+                                className="flex-1 px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleOutputPick}
+                                className="px-3 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                            >
+                                Browse
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Update Command</label>
+                        <input
+                            name="updateCommand"
+                            value={tool.updateCommand}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-semibold mb-1">Start Command *</label>
+                        <input
+                            name="startCommand"
+                            value={tool.startCommand}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
+                        />
+                    </div>
+                    {error && <div className="text-red-600 font-medium mt-2">{error}</div>}
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                        >
+                            {saving ? "Saving..." : initialTool ? "Save Changes" : "Add Tool"}
+                        </button>
+                    </div>
+                </form>
             </div>
-            {/* Modal CSS */}
-            <style>{`
-        .modal-backdrop {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;
-        }
-        .modal-window {
-          background: var(--background, #23272e); color: var(--text, #fff); border-radius: 12px; min-width: 480px; max-width: 98vw;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1em 2em 0 2em; }
-        .modal-content { padding: 2em; }
-        .error { color: red; margin-top: 1em; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 1em; margin-top: 2em; }
-        .modal-actions button { padding: 0.5em 1.5em; border-radius: 6px; border: none; background: #222; color: #fff; }
-      `}</style>
         </div>
     );
 };

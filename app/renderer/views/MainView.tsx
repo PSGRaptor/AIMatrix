@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import QuickMenu from '../components/QuickMenu';
-import ConfigModal, { Tool } from '../components/ConfigModal';
+import ConfigModal from '../components/ConfigModal';
 import ToolCard from "../components/ToolCard";
 import ThemeToggle from "../components/ThemeToggle";
 import TerminalPane from "../components/TerminalPane";
@@ -30,7 +30,7 @@ export default function MainView({
 
     // === MODAL STATE for Add/Edit Tools ===
     const [configModalOpen, setConfigModalOpen] = useState(false);
-    const [editTool, setEditTool] = useState<Tool | null>(null);
+    const [editTool, setEditTool] = useState<ToolConfig | null>(null);
 
     // Load tools at mount or after saving
     useEffect(() => {
@@ -80,7 +80,7 @@ export default function MainView({
     };
 
     // Handler for editing a tool (you can use this from ToolCard if you add an edit button)
-    const handleEditTool = (tool: Tool) => {
+    const handleEditTool = (tool: ToolConfig) => {
         setEditTool(tool);
         setConfigModalOpen(true);
     };
@@ -165,7 +165,7 @@ export default function MainView({
                             <p className="text-gray-700 dark:text-gray-300 mb-4">{activeTool.description}</p>
                             <button
                                 className="mt-4 px-4 py-2 bg-blue-700 rounded hover:bg-blue-800 transition text-white"
-                                onClick={() => handleEditTool(activeTool as Tool)}
+                                onClick={() => handleEditTool(activeTool as ToolConfig)}
                             >
                                 Edit Tool Settings
                             </button>

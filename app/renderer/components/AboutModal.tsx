@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import pkg from '../../../package.json';
+import pkg from 'package.json';
 
 export default function AboutModal({ onClose }: { onClose: () => void }) {
     const modalRef = useRef<HTMLDivElement>(null);

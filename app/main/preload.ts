@@ -1,7 +1,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("electronAPI", {
-    //getUserDataPath: () => ipcRenderer.invoke('getUserDataPath'),
+    toolsSave: (tool: any) => ipcRenderer.invoke('tools:save', tool),
+    toolsCopyIcon: (srcPath: string) => ipcRenderer.invoke('tools:copyIcon', srcPath),
+    showOpenDialog: () => ipcRenderer.invoke('showOpenDialog'),
     getTools: () => ipcRenderer.invoke("get-tools"),
     listImagesInFolder: (folder: string) => ipcRenderer.invoke("list-images-in-folder", folder),
     runToolTerminal: (cmd: string, dir: string, toolName: string) => ipcRenderer.invoke("run-tool-terminal", cmd, dir, toolName),

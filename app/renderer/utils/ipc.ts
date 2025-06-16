@@ -1,5 +1,4 @@
 import type { ToolConfig, ElectronAPI } from "../env";
-
 // Run the tool's terminal command (start script, etc.)
 export async function runToolTerminal(cmd: string, dir: string): Promise<{ success: boolean; error?: string }> {
     if (window.electronAPI && window.electronAPI.runToolTerminal) {

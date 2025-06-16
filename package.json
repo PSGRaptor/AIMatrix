@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.1.6start ",
+  "version": "0.1.65",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -11,7 +11,6 @@
     "build": "vite build && tsc -p app/main/",
     "start": "electron .",
     "build:main": "tsc --project tsconfig.main.json",
-    "clean:main": "rimraf app/main/*.js",
     "watch:main": "tsc --watch --project tsconfig.main.json"
   },
   "dependencies": {
@@ -25,6 +24,7 @@
     "xterm": "^5.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.10",
     "@types/node": "^20.4.2",
     "@types/react": "^18.2.6",
     "@types/react-dom": "^18.2.4",
@@ -39,5 +39,6 @@
     "typescript": "^5.4.0",
     "vite": "^6.3.5",
     "wait-on": "^8.0.3"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

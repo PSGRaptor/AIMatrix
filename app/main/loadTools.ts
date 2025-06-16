@@ -48,7 +48,6 @@ export type ToolConfig = {
 export function loadTools(): ToolConfig[] {
     // Always reference from process.cwd(), which is your project root when developing
     const dir = path.join(process.cwd(), "app/config/tools");
-    console.log("[loadTools] Looking for tools in:", dir);
     if (!fs.existsSync(dir)) {
         console.log("Tool config directory does not exist:", dir);
         return [];
