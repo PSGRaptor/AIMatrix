@@ -30,6 +30,7 @@ export interface ElectronAPI {
     openImageViewer: (outputFolder: string) => Promise<any>;
     // Optional: For legacy or advanced control
     startTool?: (startCommand: string, workingDir: string) => Promise<{ success: boolean; error?: string }>;
+    toolsDelete: (name: string) => Promise<any>;
 }
 
 declare global {

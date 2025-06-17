@@ -179,8 +179,8 @@ export default function MainView({
             <ConfigModal
                 isOpen={configModalOpen}
                 onClose={() => setConfigModalOpen(false)}
-                initialTool={editTool}
-                onSave={() => setConfigModalOpen(false)}
+                tool={editTool}
+                onSaved={() => setConfigModalOpen(false)}
             />
         </div>
     );

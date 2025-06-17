@@ -13,8 +13,8 @@ AIMatrix is a modern, cross-platform AI tool launcher and integration hub for de
 * [x] Core Layout & Navigation
 * [x] Modal Windows & Theming
 * [x] Tool Cards, Info Pane, and Interactivity
-* [ ] Electron Integration & Tool Launch
-* [ ] Configuration Management & Persistence
+* [x] Electron Integration & Tool Launch
+* [x] Configuration Management & Persistence
 * [ ] Polish, Accessibility, and Documentation
 * [ ] Packaging & Distribution
 * [ ] Continuous Integration & Maintenance

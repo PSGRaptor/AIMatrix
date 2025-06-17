@@ -1,21 +1,33 @@
+// app/main/main.ts
+
 console.log("CANARY: Electron main.ts started!", __dirname, process.cwd());
-import {app, BrowserWindow, shell, ipcMain, dialog} from "electron";
+import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import * as pty from "node-pty"; // Use node-pty for interactive terminals
-import { loadTools } from "./loadTools";
 
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-software-rasterizer');
-app.commandLine.appendSwitch('ignore-gpu-blacklist');
-app.disableHardwareAcceleration();
+// Tool type definition - include optional createdAt/lastModified
+export type ToolConfig = {
+    name: string;
+    icon: string;
+    description: string;
+    toolRoot: string;
+    url: string;
+    outputFolder: string;
+    updateCommand: string;
+    startCommand: string;
+    createdAt?: string;
+    lastModified?: string;
+};
+
+const TOOL_DIR = path.join(process.cwd(), "app/config/tools");
+if (!fs.existsSync(TOOL_DIR)) fs.mkdirSync(TOOL_DIR, { recursive: true });
 
 let mainWindow: BrowserWindow | null = null;
-
-// Track running PTY processes per tool name
 const runningPtys: { [toolName: string]: pty.IPty } = {};
 
+// --------- ELECTRON WINDOW ----------
 function createWindow() {
     console.log("Creating Window");
     mainWindow = new BrowserWindow({
@@ -52,35 +64,75 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-    // Kill all running ptys
     for (const toolName in runningPtys) {
         runningPtys[toolName].kill();
         delete runningPtys[toolName];
     }
 });
 
+// --------- TOOL CRUD HANDLERS ----------
+
+// List all tools (loadTools)
 ipcMain.handle("get-tools", async () => {
-    console.log('Tools loaded');
-    return loadTools();
+    if (!fs.existsSync(TOOL_DIR)) return [];
+    const files = fs.readdirSync(TOOL_DIR).filter(f => f.endsWith(".json"));
+    return files.map(filename => {
+        const filePath = path.join(TOOL_DIR, filename);
+        const data = fs.readFileSync(filePath, "utf-8");
+        return JSON.parse(data) as ToolConfig;
+    });
 });
 
+// Save (add or update) a tool
+ipcMain.handle("tools:save", async (_event, tool: ToolConfig) => {
+    const safeName = tool.name.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const filePath = path.join(TOOL_DIR, `${safeName}.json`);
+    tool.lastModified = new Date().toISOString();
+    if (!tool.createdAt) tool.createdAt = tool.lastModified;
+    fs.writeFileSync(filePath, JSON.stringify(tool, null, 2), "utf-8");
+    return true;
+});
+
+// Delete a tool
+ipcMain.handle('tools:delete', async (_event, name: string) => {
+    const safeName = name.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const filePath = path.join(TOOL_DIR, `${safeName}.json`);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return true;
+});
+
+// Show open dialog (general-purpose, passes renderer's options to Electron)
+ipcMain.handle('showOpenDialog', async (_event, opts) => {
+    return await dialog.showOpenDialog(opts || {});
+});
+
+// Copy icon into userData/icons, return relative path
+ipcMain.handle('tools:copyIcon', async (_event, srcPath: string) => {
+    if (!srcPath) throw new Error('No icon selected');
+    const iconsDir = path.join(app.getPath('userData'), 'icons');
+    if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+    const ext = path.extname(srcPath);
+    const destName = `icon_${Date.now()}${ext}`;
+    const destPath = path.join(iconsDir, destName);
+    fs.copyFileSync(srcPath, destPath);
+    // Return relative path, e.g., 'icons/icon_12345.png'
+    return `icons/${destName}`;
+});
+
+// --------- OTHER APP HANDLERS (unchanged) ----------
+
 ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
-    console.log('get-image-files-in-folder');
-    if (!fs.existsSync(folder))
-        return [];
+    if (!fs.existsSync(folder)) return [];
     return fs.readdirSync(folder)
         .filter(file => /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(file));
-
 });
 
 ipcMain.handle("read-image-file-as-array-buffer", async (_event, folder: string, filename: string) => {
-    console.log('read-image-file-as-array-buffer');
     const fullPath = path.join(folder, filename);
-       return fs.readFileSync(fullPath).buffer;
+    return fs.readFileSync(fullPath).buffer;
 });
 
 ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
-    console.log('list-images-in-folder');
     try {
         const files = fs.readdirSync(folder);
         return files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
@@ -89,22 +141,17 @@ ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
     }
 });
 
-// Launches a tool in a PTY and streams output
 ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: string, toolName: string) => {
-    // Kill any existing PTY for this tool
     if (runningPtys[toolName]) {
         runningPtys[toolName].kill();
         delete runningPtys[toolName];
     }
-
-    // Choose shell (always use cmd.exe for .bat/.cmd, bash for Linux)
     const isWindows = os.platform() === "win32";
     const shell = isWindows ? "cmd.exe" : "bash";
     const shellArgs = isWindows
-        ? ["/c", startCommand] // '/c' runs then exits
+        ? ["/c", startCommand]
         : ["-c", startCommand];
 
-    // Spawn the PTY
     const ptyProcess = pty.spawn(shell, shellArgs, {
         name: "xterm-color",
         cwd: workingDir,
@@ -115,7 +162,6 @@ ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: st
 
     runningPtys[toolName] = ptyProcess;
 
-    // Forward output to renderer
     ptyProcess.onData(data => {
         event.sender.send("tool-terminal-data", data);
     });
@@ -127,7 +173,6 @@ ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: st
     return { success: true };
 });
 
-// Receives input from renderer and writes to PTY
 ipcMain.on("terminal-input", (_event, toolName: string, data: string) => {
     const ptyProc = runningPtys[toolName];
     if (ptyProc) {
@@ -135,11 +180,8 @@ ipcMain.on("terminal-input", (_event, toolName: string, data: string) => {
     }
 });
 
-// Tool UI window (unchanged)
 ipcMain.handle("open-tool-window", async (_event, url: string) => {
     if (!url) return { success: false, error: "No URL provided" };
-    console.log('Preload path:', path.join(__dirname, "preload.js"));
-
     const toolWin = new BrowserWindow({
         width: 1280,
         height: 900,
@@ -163,7 +205,6 @@ ipcMain.handle("open-output-folder", async (_event, folderPath: string) => {
     return { success: false, error: "No folder path provided" };
 });
 
-// Stop a running tool (stop/kill button)
 ipcMain.handle("kill-tool-process", (_event, toolName: string) => {
     const ptyProc = runningPtys[toolName];
     if (ptyProc) {
@@ -175,24 +216,24 @@ ipcMain.handle("kill-tool-process", (_event, toolName: string) => {
 });
 
 ipcMain.handle('getUserDataPath', async () => app.getPath('userData'));
-
-// Optionally expose dialog for renderer to pick icons
-ipcMain.handle('showOpenDialog', async () => {
-    return await dialog.showOpenDialog({
-        title: 'Select Icon',
-        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'ico', 'svg'] }],
-        properties: ['openFile']
-    });
+ipcMain.on('getUserDataPathSync', (event) => {
+    event.returnValue = app.getPath('userData');
 });
 
-ipcMain.handle('tools:copyIcon', async (_, srcPath: string) => {
-    if (!srcPath) throw new Error('No icon selected');
-    const iconsDir = path.join(app.getPath('userData'), 'icons');
-    if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
-    const ext = path.extname(srcPath);
-    const destName = `icon_${Date.now()}${ext}`;
-    const destPath = path.join(iconsDir, destName);
-    fs.copyFileSync(srcPath, destPath);
-    // Return relative path
-    return `icons/${destName}`;
+ipcMain.handle('get-tool-icon', async (_event, relPath: string) => {
+    if (!relPath) return null;
+    // UserData path
+    const userData = app.getPath('userData');
+    const iconPath = path.join(userData, relPath);
+    if (!fs.existsSync(iconPath)) return null;
+    // Read file and return as data URL
+    const ext = path.extname(iconPath).toLowerCase();
+    let mime = "image/png";
+    if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
+    else if (ext === ".ico") mime = "image/x-icon";
+    else if (ext === ".svg") mime = "image/svg+xml";
+    else if (ext === ".webp") mime = "image/webp";
+    const data = fs.readFileSync(iconPath);
+    const base64 = data.toString('base64');
+    return `data:${mime};base64,${base64}`;
 });
