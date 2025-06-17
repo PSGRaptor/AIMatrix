@@ -1,8 +1,17 @@
-import type { ToolConfig, ElectronAPI } from "../env";
+// app/renderer/utils/ipc.ts
+
+// Import the ElectronAPI type
+import type { ElectronAPI } from "../env";
+
 // Run the tool's terminal command (start script, etc.)
-export async function runToolTerminal(cmd: string, dir: string): Promise<{ success: boolean; error?: string }> {
+export async function runToolTerminal(
+    cmd: string,
+    dir: string,
+    toolName: string
+): Promise<{ success: boolean; error?: string }> {
     if (window.electronAPI && window.electronAPI.runToolTerminal) {
-        return await window.electronAPI.runToolTerminal(cmd, dir);
+        // Only call with 2 arguments
+        return await window.electronAPI.runToolTerminal(cmd, dir, toolName);
     }
     return { success: false, error: "Electron API not available." };
 }
@@ -23,7 +32,7 @@ export async function openImageViewer(outputFolder: string) {
     alert(`Would open folder: ${outputFolder}`);
 }
 
-// app/renderer/utils/ipc.ts
+// Get Electron user data path
 export const getUserDataPath = () =>
     (window as any).electronAPI?.getUserDataPath
         ? (window as any).electronAPI.getUserDataPath()

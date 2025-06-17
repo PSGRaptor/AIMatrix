@@ -23,6 +23,8 @@ export interface ElectronAPI {
     runToolTerminal: (cmd: string, dir: string, toolName: string) => Promise<any>;
     onToolTerminalData: (cb: (data: string) => void) => void;
     onToolTerminalExit: (cb: (code: number) => void) => void;
+    sendTerminalInput: (toolName: string, data: string) => void;
+    killToolProcess: (toolName: string) => Promise<any>;
     // Tool windows and explorer
     openToolWindow: (url: string) => Promise<any>;
     openImageViewer: (outputFolder: string) => Promise<any>;

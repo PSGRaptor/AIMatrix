@@ -17,6 +17,7 @@ let mainWindow: BrowserWindow | null = null;
 const runningPtys: { [toolName: string]: pty.IPty } = {};
 
 function createWindow() {
+    console.log("Creating Window");
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 800,
@@ -29,8 +30,7 @@ function createWindow() {
     });
 
     if (process.env.NODE_ENV === "development") {
-        console.log("Loading URL:", "http://localhost:5173");
-        //mainWindow.loadURL("data:text/html,<h1>Hello from Electron</h1>");
+        console.log("Development Build - Loading URL:", "http://localhost:5173");
         mainWindow.loadURL("http://localhost:5173");
         mainWindow.webContents.openDevTools({ mode: 'detach' });
         mainWindow.webContents.on('did-finish-load', () => {
@@ -65,23 +65,25 @@ ipcMain.handle("get-tools", async () => {
 });
 
 ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
-    if (!fs.existsSync(folder)) return [];
+    console.log('get-image-files-in-folder');
+    if (!fs.existsSync(folder))
+        return [];
     return fs.readdirSync(folder)
         .filter(file => /\.(jpg|jpeg|png|webp|bmp|gif|tiff?|tif)$/i.test(file));
-    console.log('get-image-files-in-folder');
+
 });
 
 ipcMain.handle("read-image-file-as-array-buffer", async (_event, folder: string, filename: string) => {
+    console.log('read-image-file-as-array-buffer');
     const fullPath = path.join(folder, filename);
        return fs.readFileSync(fullPath).buffer;
-       console.log('read-image-file-as-array-buffer');
 });
 
 ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
+    console.log('list-images-in-folder');
     try {
         const files = fs.readdirSync(folder);
         return files.filter(f => /\.(jpg|jpeg|png|gif|bmp|tif|tiff)$/i.test(f));
-        console.log('list-images-in-folder');
     } catch (e) {
         return [];
     }

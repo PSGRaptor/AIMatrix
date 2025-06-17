@@ -17,9 +17,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.removeAllListeners("tool-terminal-exit");
         ipcRenderer.on("tool-terminal-exit", (_event, code) => callback(code));
     },
+    sendTerminalInput: (toolName: string, data: string) =>
+        ipcRenderer.send("terminal-input", toolName, data),
     getImageFilesInFolder: (folder: string) => ipcRenderer.invoke("get-image-files-in-folder", folder),
     readImageFileAsArrayBuffer: (folder: string, filename: string) => ipcRenderer.invoke("read-image-file-as-array-buffer", folder, filename),
-    sendTerminalInput: (toolName: string, data: string) => ipcRenderer.send("terminal-input", toolName, data),
     killToolProcess: (toolName: string) => ipcRenderer.invoke("kill-tool-process", toolName),
     // Optional, for general-purpose bridge:
     invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),

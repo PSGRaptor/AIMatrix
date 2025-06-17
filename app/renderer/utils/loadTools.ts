@@ -23,7 +23,8 @@ export interface Tool {
  * Loads all tool configs via Electron's API.
  */
 export async function loadTools(): Promise<ToolConfig[]> {
-    if (window.electronAPI) {
+    console.log("loadTools function called");
+    if (window.electronAPI && window.electronAPI.getTools) {
         return await window.electronAPI.getTools();
     }
     return [];
@@ -36,7 +37,7 @@ export async function startTool(
     startCommand: string,
     workingDir: string
 ): Promise<{ success: boolean; error?: string }> {
-    if (window.electronAPI) {
+    if (window.electronAPI && window.electronAPI.startTool) {
         return await window.electronAPI.startTool(startCommand, workingDir);
     }
     return { success: false, error: "Electron API not available." };

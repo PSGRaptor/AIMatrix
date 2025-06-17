@@ -33,7 +33,7 @@ export default function WebToolPane({
                 ref={webviewRef}
                 src={url}
                 style={{ width: "100%", height: "100%", border: "none" }}
-                allowpopups="true"
+                allowpopups={true}
                 webpreferences="contextIsolation=yes,nodeIntegration=no"
             />
         </div>
