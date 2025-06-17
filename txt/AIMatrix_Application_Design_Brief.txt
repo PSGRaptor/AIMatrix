@@ -58,7 +58,7 @@ IMPORTANT!!! When designing the app:
 	A. all code will be commented 
 	B. all code will be fully presented
 	C. file names and their locations within the app will be presented at all times.
-	D. editing and changing code at any time will NOT delete any functionability to preserve existing and working code.
+	D. editing and changing code at any time will NOT delete any functionality to preserve existing and working code.
 	E. Our first OS to build for is Windows 11
 	F. Our code will be easily ported to Mac and Linux with minimum alteration
 	G. We will be using IntelliJ IDEA Ultimate on this project

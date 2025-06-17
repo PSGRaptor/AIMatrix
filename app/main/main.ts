@@ -24,6 +24,8 @@ export type ToolConfig = {
 const TOOL_DIR = path.join(process.cwd(), "app/config/tools");
 if (!fs.existsSync(TOOL_DIR)) fs.mkdirSync(TOOL_DIR, { recursive: true });
 
+const mime = require("mime");
+
 let mainWindow: BrowserWindow | null = null;
 const runningPtys: { [toolName: string]: pty.IPty } = {};
 
@@ -236,4 +238,55 @@ ipcMain.handle('get-tool-icon', async (_event, relPath: string) => {
     const data = fs.readFileSync(iconPath);
     const base64 = data.toString('base64');
     return `data:${mime};base64,${base64}`;
+});
+
+// Add this handler for reading image files as base64
+ipcMain.handle("read-image-as-data-url", async (_event, absPath: string) => {
+    console.log("read-image-as-data-url executed");
+    if (!absPath || !fs.existsSync(absPath)) return null;
+    const ext = path.extname(absPath).toLowerCase();
+    let mime = "image/png";
+    if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
+    else if (ext === ".gif") mime = "image/gif";
+    else if (ext === ".bmp") mime = "image/bmp";
+    else if (ext === ".webp") mime = "image/webp";
+    else if (ext === ".ico") mime = "image/x-icon";
+    else if (ext === ".svg") mime = "image/svg+xml";
+    const data = fs.readFileSync(absPath);
+    return `data:${mime};base64,${data.toString("base64")}`;
+});
+
+ipcMain.handle("save-image-data", async (_event, absPath: string, buf: Uint8Array) => {
+    console.log("save-image-data executed");
+    if (!absPath) return false;
+    fs.writeFileSync(absPath, Buffer.from(buf));
+    return true;
+});
+
+// Use this robust handler for reading images as Data URL
+ipcMain.handle("readImageAsDataUrl", async (_event, absPath: string) => {
+    console.log("readImageAsDataUrl executed");
+    if (!absPath || !fs.existsSync(absPath)) return null;
+    try {
+        // Auto-detect the correct mime type for any file
+        const mimeType = mime.getType(absPath) || "image/png";
+        const data = fs.readFileSync(absPath);
+        const base64 = data.toString("base64");
+        return `data:${mimeType};base64,${base64}`;
+    } catch (e) {
+        return null;
+    }
+});
+
+// List subfolders in a given folder (non-recursive, only directories)
+ipcMain.handle("listFoldersInFolder", async (_event, folder: string) => {
+    try {
+        console.log("listFoldersInFolder executed");
+        if (!fs.existsSync(folder)) return [];
+        return fs.readdirSync(folder)
+            .map(name => path.join(folder, name))
+            .filter(fullPath => fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory());
+    } catch (e) {
+        return [];
+    }
 });

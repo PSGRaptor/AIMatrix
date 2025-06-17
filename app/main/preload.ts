@@ -28,9 +28,13 @@ const electronAPI = {
     getTools: () => ipcRenderer.invoke("get-tools"),
 
     // Images & Files
+    saveImageData: (absPath: string, buf: Uint8Array) => ipcRenderer.invoke("save-image-data", absPath, buf),
     listImagesInFolder: (folder: string) => ipcRenderer.invoke("list-images-in-folder", folder),
+    listFoldersInFolder: (folder: string) => ipcRenderer.invoke("listFoldersInFolder", folder),
+    readImageAsDataUrl: (absPath: string) => ipcRenderer.invoke("readImageAsDataUrl", absPath),
     getImageFilesInFolder: (folder: string) => ipcRenderer.invoke("get-image-files-in-folder", folder),
     readImageFileAsArrayBuffer: (folder: string, filename: string) => ipcRenderer.invoke("read-image-file-as-array-buffer", folder, filename),
+
 
     // Tool process/terminal
     runToolTerminal: (cmd: string, dir: string, toolName: string) => ipcRenderer.invoke("run-tool-terminal", cmd, dir, toolName),
