@@ -5,3 +5,10 @@
 body {
     font-family: 'Inter', system-ui, sans-serif;
 }
+.react-viewer-navbar li img {
+    width: 150px !important;   /* Default is 66px */
+    height: 200px !important;  /* You can increase this as needed */
+    object-fit: cover;
+    border-radius: 8px;       /* Optional: rounded corners */
+    margin: 4px 4px;
+}

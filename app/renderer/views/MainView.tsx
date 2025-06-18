@@ -8,6 +8,9 @@ import ImageViewerPane from "../components/ImageViewerPane";
 import { ToolConfig } from "../env";
 import { loadTools } from "../utils/loadTools";
 
+/**
+ * Type for center menu switching
+ */
 type QuickMenuType = "cards" | "imageViewer" | "terminal";
 
 type MainViewProps = {
@@ -16,23 +19,32 @@ type MainViewProps = {
     setTheme: (t: "dark" | "light") => void;
 };
 
-export default function MainView({
-                                     openAboutModal,
-                                     theme,
-                                     setTheme,
-                                 }: MainViewProps) {
+const MainView: React.FC<MainViewProps> = ({
+                                               openAboutModal,
+                                               theme,
+                                               setTheme,
+                                           }) => {
+    // Tool cards state
     const [tools, setTools] = useState<ToolConfig[]>([]);
+    // Width of right info pane
     const [infoPaneWidth, setInfoPaneWidth] = useState(25);
+    // Active tool for info pane display
     const [activeTool, setActiveTool] = useState<ToolConfig | null>(null);
+    // Which view is active
     const [activeMenu, setActiveMenu] = useState<QuickMenuType>("cards");
+    // State for Terminal/imageViewer modals
     const [terminalTool, setTerminalTool] = useState<ToolConfig | null>(null);
     const [imageViewerTool, setImageViewerTool] = useState<ToolConfig | null>(null);
-
-    // === MODAL STATE for Add/Edit Tools ===
+    // Add/Edit tool modal
     const [configModalOpen, setConfigModalOpen] = useState(false);
     const [editTool, setEditTool] = useState<ToolConfig | null>(null);
 
-    // Load tools at mount or after saving
+    // --- EXIF integration ---
+    // These two states will be set by ImageViewerPane when an image is selected
+    const [selectedImage, setSelectedImage] = useState<string | null>(null); // Data URL
+    const [selectedExif, setSelectedExif] = useState<any | null>(null);
+
+    // Load tool cards from disk
     useEffect(() => {
         async function fetchTools() {
             try {
@@ -45,17 +57,21 @@ export default function MainView({
         fetchTools();
     }, [configModalOpen]); // reload on modal close/save
 
+    // Open terminal with selected tool
     const handleStartTerminal = useCallback((tool: ToolConfig) => {
         setTerminalTool(tool);
         setActiveMenu("terminal");
     }, []);
 
+    // Open image viewer with selected tool
     const handleOpenImageViewer = useCallback((tool: ToolConfig) => {
         setImageViewerTool(tool);
         setActiveMenu("imageViewer");
+        setSelectedImage(null); // Reset on open
+        setSelectedExif(null);
     }, []);
 
-    // Info pane resizer
+    // Info pane resizer (draggable divider)
     const handleDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         e.preventDefault();
         const startX = e.clientX;
@@ -73,19 +89,19 @@ export default function MainView({
         window.addEventListener("mouseup", onMouseUp);
     };
 
-    // Handler for opening modal to add a tool
+    // Add new tool (clear form)
     const handleAddTool = () => {
         setEditTool(null);
         setConfigModalOpen(true);
     };
 
-    // Handler for editing a tool (you can use this from ToolCard if you add an edit button)
+    // Edit existing tool (prefill form)
     const handleEditTool = (tool: ToolConfig) => {
         setEditTool(tool);
         setConfigModalOpen(true);
     };
 
-    // Main center pane switching logic
+    // -- MAIN content switching logic --
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
@@ -106,8 +122,6 @@ export default function MainView({
                             onShowInfo={() => setActiveTool(tool)}
                             onOpenImageViewer={() => handleOpenImageViewer(tool)}
                             active={activeTool?.name === tool.name}
-                            // Add this if you want in-card editing:
-                            // onEditClick={() => handleEditTool(tool)}
                         />
                     ))
                 )}
@@ -125,15 +139,20 @@ export default function MainView({
             <ImageViewerPane
                 tool={imageViewerTool}
                 onBack={() => setActiveMenu("cards")}
+                // Notify parent of image change for info pane EXIF display
+                onImageChange={(imageSrc, exif) => {
+                    setSelectedImage(imageSrc);
+                    setSelectedExif(exif);
+                }}
             />
         );
     }
 
     return (
         <div className="flex w-full h-full">
-            {/* Quick Menu */}
-            <QuickMenu onConfigClick={handleAddTool} />
-            {/* Center */}
+            {/* Quick Menu (left) */}
+            <QuickMenu onConfigClick={handleAddTool} theme={theme} setTheme={setTheme} />
+            {/* Main content area */}
             <div
                 className="flex-1 p-8 overflow-y-auto bg-white text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300"
                 style={{
@@ -143,13 +162,13 @@ export default function MainView({
             >
                 {centerPane}
             </div>
-            {/* Draggable divider */}
+            {/* Draggable divider for resizing info pane */}
             <div
                 className="cursor-col-resize w-2 hover:bg-gray-600 transition-colors duration-200"
                 style={{ zIndex: 10, background: "#2c2c2c" }}
                 onMouseDown={handleDrag}
             />
-            {/* Info Pane */}
+            {/* Right info pane */}
             <aside
                 className="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-800 transition-all duration-200"
                 style={{
@@ -173,6 +192,28 @@ export default function MainView({
                     ) : (
                         <div className="text-gray-700 dark:text-gray-300">Select a tool card to view more info.</div>
                     )}
+
+                    {/* --- Show EXIF data in the right pane if an image is selected --- */}
+                    {selectedImage && selectedExif && typeof selectedExif === "object" ? (
+                        <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-xl max-h-[40vh] overflow-auto text-xs border border-blue-300 dark:border-blue-800">
+                            <h3 className="font-bold text-blue-700 dark:text-blue-400 mb-2">
+                                EXIF Metadata
+                            </h3>
+                            {Object.keys(selectedExif).map(ifd =>
+                                    selectedExif[ifd] && Object.keys(selectedExif[ifd]).length > 0 && (
+                                        <div key={ifd} className="mb-2">
+                                            <div className="font-semibold">{ifd}</div>
+                                            {Object.entries(selectedExif[ifd]).map(([tag, val]) => (
+                                                <div key={tag} className="flex gap-2 py-0.5">
+                                                    <div className="w-40">{tag}</div>
+                                                    <div className="flex-1 break-words">{String(val)}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                            )}
+                        </div>
+                    ): null}
                 </div>
             </aside>
             {/* Tool Config Modal */}
@@ -184,4 +225,6 @@ export default function MainView({
             />
         </div>
     );
-}
+};
+
+export default MainView;

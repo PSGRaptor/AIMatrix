@@ -15,7 +15,7 @@ AIMatrix is a modern, cross-platform AI tool launcher and integration hub for de
 * [x] Tool Cards, Info Pane, and Interactivity
 * [x] Electron Integration & Tool Launch
 * [x] Configuration Management & Persistence
-* [ ] Polish, Accessibility, and Documentation
+* [x] Polish, Accessibility, and Documentation
 * [ ] Packaging & Distribution
 * [ ] Continuous Integration & Maintenance
 
@@ -44,6 +44,7 @@ For full milestone details, see [`aimatrix-roadmap.md`](./aimatrix-roadmap.md).
 * **Theming: Light/Dark modes**
 * **Cross-platform ready: Windows 11 first, Mac/Linux support planned**
 * **Secure: Electron context isolation, sandboxing, best practices**
+* **Image Viewer for each tool with EXIF metadata view**
 
 ---
 

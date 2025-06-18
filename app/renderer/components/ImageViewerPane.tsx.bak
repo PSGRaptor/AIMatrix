@@ -1,80 +1,59 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { ToolConfig } from "../env";
 import Viewer from "react-viewer";
 import piexif from "piexifjs";
 
-/**
- * Props for the ImageViewerPane
- */
+// ------ Type Definitions ------
+
+// Props for this component
 type ImageViewerPaneProps = {
-    tool: ToolConfig | null;     // Tool config (may be null if no tool active)
-    onBack: () => void;          // Called when the back button is pressed
+    tool: ToolConfig | null;         // The tool whose output folder to show
+    onBack: () => void;              // Callback for "Back" button
 };
 
-/**
- * Internal representation of a loaded image
- */
+// Represents a single image and its source/file info
 type ImageFile = { src: string; alt: string; filePath: string };
 
-/**
- * The main image viewer component with EXIF support, folder navigation, progress bar, and robust cleanup.
- */
+// ------ ImageViewerPane Component ------
 const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
-    // Used to cancel async tasks if tool/folder changes
-    const loadTask = useRef<number>(0);
-
-    // The currently displayed folder (root or subfolder)
+    // Current output folder being viewed
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
 
-    // All subfolders (for folder picker)
+    // All available folders (root + subfolders)
     const [folders, setFolders] = useState<string[]>([]);
 
-    // Array of loaded images for the current folder
+    // Loaded images (as data URLs)
     const [images, setImages] = useState<ImageFile[]>([]);
 
-    // Is the image viewer modal open?
+    // Viewer visibility (react-viewer modal)
     const [visible, setVisible] = useState(false);
 
-    // Index of the currently selected image (for EXIF and Viewer)
+    // Index of the currently viewed image in the array
     const [activeIndex, setActiveIndex] = useState<number>(0);
 
-    // EXIF metadata for the current image (null if not loaded or not present)
+    // Loaded EXIF data for current image
     const [exifData, setExifData] = useState<any | null>(null);
 
-    // Loading/progress state (true while scanning/loading images)
+    // Loading/progress state
     const [isLoading, setIsLoading] = useState(false);
-
-    // % Progress for progress bar
     const [progress, setProgress] = useState(0);
 
-    // Whether to show the thumbnail grid (true) or open the modal viewer (false)
+    // Show/hide the thumbnail grid before full viewer
     const [thumbView, setThumbView] = useState(true);
 
-    /**
-     * Reset everything on tool change.
-     * - Sets up folder navigation to start at the root folder
-     * - Loads available subfolders
-     * - Increments loadTask so previous loads are aborted if switching quickly
-     */
+    // ------ FOLDER & TOOL LOGIC ------
+    // On tool change, reset to show root output folder and load subfolders (one level)
     useEffect(() => {
-        loadTask.current += 1; // Bump to invalidate old async tasks
-        setCurrentFolder(null);
-        setFolders([]);
-        setImages([]);
-        setExifData(null);
-        setProgress(0);
-        setActiveIndex(0);
-        setVisible(false);
-        setThumbView(true);
-
-        // If no tool or no output folder, don't load
-        if (!tool || !tool.outputFolder) return;
-
+        if (!tool || !tool.outputFolder) {
+            setCurrentFolder(null);
+            setFolders([]);
+            setImages([]);
+            return;
+        }
         setCurrentFolder(tool.outputFolder);
-
-        // Load folders (root + subfolders, one level)
         (async () => {
             try {
+                // Ask backend for all folders in the tool's output folder (including root)
                 const subfolders: string[] = await window.electronAPI.listFoldersInFolder(tool.outputFolder);
                 setFolders([tool.outputFolder, ...subfolders]);
             } catch {
@@ -83,25 +62,19 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         })();
     }, [tool]);
 
-    /**
-     * When the folder changes, scan for image files, load them as data URLs, and track progress.
-     * - Uses loadTask to abort previous loads if the user switches folders/tools quickly
-     * - Resets images, exif, and progress
-     */
+    // ------ IMAGE LOADING LOGIC ------
+    // When currentFolder changes, scan for image files and load them as data URLs
     useEffect(() => {
         let isMounted = true;
-        const thisTask = loadTask.current;
-
-        setImages([]);
-        setExifData(null);
-        setProgress(0);
-        setActiveIndex(0);
-
+        setImages([]);           // Reset images while loading new folder
+        setExifData(null);       // Reset exif display
+        setProgress(0);          // Reset progress bar
         if (!currentFolder) return;
 
         (async () => {
             setIsLoading(true);
             try {
+                // Get list of image files from backend (filtered by extension)
                 const files: string[] = await window.electronAPI.getImageFilesInFolder(currentFolder);
                 const imageArr: ImageFile[] = [];
                 let loaded = 0;
@@ -109,44 +82,31 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                     if (!filename) continue;
                     const absPath = `${currentFolder}/${filename}`;
                     try {
-                        // Read as base64 data url from backend
+                        // Read image as base64 data URL via backend
                         const dataUrl = await window.electronAPI.readImageAsDataUrl(absPath);
                         if (dataUrl) {
                             imageArr.push({ src: dataUrl, alt: filename, filePath: absPath });
                         }
-                    } catch { /* ignore individual load errors */ }
+                    } catch {}
                     loaded++;
-                    // Update progress as images are loaded
+                    // Update progress % (to show in UI)
                     if (isMounted && files.length > 0) setProgress(Math.round((loaded / files.length) * 100));
                 }
-                // Only update state if still current task (user didn't switch folders/tools)
-                if (isMounted && loadTask.current === thisTask) {
-                    setImages(imageArr);
-                    setActiveIndex(0);
+                if (isMounted) {
+                    setImages(imageArr);   // Show found images
+                    setActiveIndex(0);     // Start at first image
                 }
             } catch {
-                if (isMounted && loadTask.current === thisTask) setImages([]);
+                if (isMounted) setImages([]);
             } finally {
-                if (isMounted && loadTask.current === thisTask) setIsLoading(false);
+                if (isMounted) setIsLoading(false); // Done loading
             }
         })();
-
-        return () => { isMounted = false; };
+        return () => { isMounted = false; }; // Cancel async work on unmount
     }, [currentFolder]);
 
-    /**
-     * Whenever the tool or folder changes, show the thumbnail view first and reset EXIF and selection.
-     */
-    useEffect(() => {
-        setThumbView(true);
-        setExifData(null);
-        setActiveIndex(0);
-    }, [tool, currentFolder]);
-
-    /**
-     * When an image or the index changes, extract EXIF metadata.
-     * Uses piexifjs (client-side) to decode EXIF from base64 images.
-     */
+    // ------ EXIF LOGIC ------
+    // When image or selection changes, extract EXIF using piexifjs
     useEffect(() => {
         if (!images.length || !images[activeIndex] || !images[activeIndex].src) {
             setExifData(null);
@@ -160,16 +120,19 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         }
     }, [activeIndex, images]);
 
-    /**
-     * Display helper: Get nice subfolder names for the dropdown.
-     */
+    // On tool/folder change, always show thumbnails first
+    useEffect(() => {
+        setThumbView(true);
+    }, [tool, currentFolder]);
+
+    // Display helper: get nice subfolder names for dropdown
     function displayFolder(folderPath: string) {
         if (!tool?.outputFolder) return folderPath;
         if (folderPath === tool.outputFolder) return "Root";
         return folderPath.replace(tool.outputFolder, "").replace(/^\/|\\/, "");
     }
 
-    // No images in the current folder?
+    // No images found in current folder
     const noImages = images.length === 0;
 
     // ------ RENDER ------
@@ -225,8 +188,8 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                             key={img.alt + idx}
                             className="cursor-pointer hover:ring-4 ring-blue-400"
                             style={{
-                                width: 200,   // WIDER thumbnails
-                                height: 200,
+                                width: 180,
+                                height: 180,
                                 background: "#1c1c1c",
                                 borderRadius: 12,
                                 overflow: "hidden",
@@ -247,7 +210,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                                 alt={img.alt}
                                 style={{
                                     maxWidth: 200,
-                                    maxHeight: 190,
+                                    maxHeight: 170,
                                     borderRadius: 10,
                                     objectFit: "contain",
                                     background: "#fff"
@@ -264,7 +227,6 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 images={images}
                 activeIndex={activeIndex}
                 onChange={(obj: any) => {
-                    // Support both v4/v5 react-viewer API for onChange (index or {index})
                     if (typeof obj === "number") setActiveIndex(obj);
                     else if (obj && typeof obj["index"] === "number") setActiveIndex(obj["index"]);
                 }}
@@ -291,8 +253,8 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                     </h3>
                     <div className="text-xs max-h-[60vh] overflow-auto">
                         {/* Show each EXIF IFD (e.g. "0th", "Exif", "GPS", etc) */}
-                        {exifData && Object.keys(exifData).map(ifd =>
-                                exifData[ifd] && Object.keys(exifData[ifd]).length > 0 && (
+                        {Object.keys(exifData).map(ifd =>
+                                Object.keys(exifData[ifd]).length > 0 && (
                                     <div key={ifd} className="mb-2">
                                         <div className="font-semibold text-blue-700 dark:text-blue-400">{ifd}</div>
                                         {Object.entries(exifData[ifd]).map(([tag, val]) => (
