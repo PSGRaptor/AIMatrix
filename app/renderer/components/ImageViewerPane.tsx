@@ -1,78 +1,51 @@
+// app/renderer/components/ImageViewerPane.tsx
+
 import React, { useEffect, useState, useRef } from "react";
 import { ToolConfig } from "../env";
 import Viewer from "react-viewer";
 import piexif from "piexifjs";
 
-/**
- * Props for the ImageViewerPane
- */
-type ImageViewerPaneProps = {
-    tool: ToolConfig | null;     // Tool config (may be null if no tool active)
-    onBack: () => void;          // Called when the back button is pressed
-};
+// Thumbnail size constants
+const THUMB_SIZE = 250;
+const THUMB_GAP = 18;
 
-/**
- * Internal representation of a loaded image
- */
+// ----- Types -----
+type ImageViewerPaneProps = {
+    tool: ToolConfig | null;
+    onBack: () => void;
+};
 type ImageFile = { src: string; alt: string; filePath: string };
 
-/**
- * The main image viewer component with EXIF support, folder navigation, progress bar, and robust cleanup.
- */
+// ----- Component -----
 const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
-    // Used to cancel async tasks if tool/folder changes
-    const loadTask = useRef<number>(0);
-
-    // The currently displayed folder (root or subfolder)
+    // State for folder nav, images, and UI
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
-
-    // All subfolders (for folder picker)
     const [folders, setFolders] = useState<string[]>([]);
-
-    // Array of loaded images for the current folder
     const [images, setImages] = useState<ImageFile[]>([]);
-
-    // Is the image viewer modal open?
-    const [visible, setVisible] = useState(false);
-
-    // Index of the currently selected image (for EXIF and Viewer)
-    const [activeIndex, setActiveIndex] = useState<number>(0);
-
-    // EXIF metadata for the current image (null if not loaded or not present)
-    const [exifData, setExifData] = useState<any | null>(null);
-
-    // Loading/progress state (true while scanning/loading images)
     const [isLoading, setIsLoading] = useState(false);
-
-    // % Progress for progress bar
     const [progress, setProgress] = useState(0);
-
-    // Whether to show the thumbnail grid (true) or open the modal viewer (false)
     const [thumbView, setThumbView] = useState(true);
+    const [activeIndex, setActiveIndex] = useState<number>(0);
+    const [visible, setVisible] = useState(false);
+    const [showExif, setShowExif] = useState(false);
+    const [exifData, setExifData] = useState<any | null>(null);
+    const gridScrollRef = useRef<HTMLDivElement>(null);
 
-    /**
-     * Reset everything on tool change.
-     * - Sets up folder navigation to start at the root folder
-     * - Loads available subfolders
-     * - Increments loadTask so previous loads are aborted if switching quickly
-     */
+    // ----------- Folder/Subfolder Loading -----------
     useEffect(() => {
-        loadTask.current += 1; // Bump to invalidate old async tasks
-        setCurrentFolder(null);
-        setFolders([]);
-        setImages([]);
-        setExifData(null);
-        setProgress(0);
-        setActiveIndex(0);
-        setVisible(false);
         setThumbView(true);
+        setShowExif(false);
+        setVisible(false);
+        setImages([]);
+        setProgress(0);
+        setExifData(null);
 
-        // If no tool or no output folder, don't load
-        if (!tool || !tool.outputFolder) return;
-
+        if (!tool || !tool.outputFolder) {
+            setCurrentFolder(null);
+            setFolders([]);
+            return;
+        }
         setCurrentFolder(tool.outputFolder);
-
-        // Load folders (root + subfolders, one level)
         (async () => {
             try {
                 const subfolders: string[] = await window.electronAPI.listFoldersInFolder(tool.outputFolder);
@@ -83,19 +56,12 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         })();
     }, [tool]);
 
-    /**
-     * When the folder changes, scan for image files, load them as data URLs, and track progress.
-     * - Uses loadTask to abort previous loads if the user switches folders/tools quickly
-     * - Resets images, exif, and progress
-     */
+    // ----------- Image List Loading -----------
     useEffect(() => {
         let isMounted = true;
-        const thisTask = loadTask.current;
-
         setImages([]);
-        setExifData(null);
         setProgress(0);
-        setActiveIndex(0);
+        setExifData(null);
 
         if (!currentFolder) return;
 
@@ -103,52 +69,50 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
             setIsLoading(true);
             try {
                 const files: string[] = await window.electronAPI.getImageFilesInFolder(currentFolder);
-                const imageArr: ImageFile[] = [];
-                let loaded = 0;
-                for (const filename of files) {
-                    if (!filename) continue;
-                    const absPath = `${currentFolder}/${filename}`;
-                    try {
-                        // Read as base64 data url from backend
-                        const dataUrl = await window.electronAPI.readImageAsDataUrl(absPath);
-                        if (dataUrl) {
-                            imageArr.push({ src: dataUrl, alt: filename, filePath: absPath });
-                        }
-                    } catch { /* ignore individual load errors */ }
-                    loaded++;
-                    // Update progress as images are loaded
-                    if (isMounted && files.length > 0) setProgress(Math.round((loaded / files.length) * 100));
-                }
-                // Only update state if still current task (user didn't switch folders/tools)
-                if (isMounted && loadTask.current === thisTask) {
-                    setImages(imageArr);
-                    setActiveIndex(0);
-                }
+                const imageArr: ImageFile[] = files
+                    .filter(filename => !!filename)
+                    .map(filename => ({
+                        src: "",
+                        alt: filename,
+                        filePath: `${currentFolder}/${filename}`,
+                    }));
+                if (isMounted) setImages(imageArr);
             } catch {
-                if (isMounted && loadTask.current === thisTask) setImages([]);
+                if (isMounted) setImages([]);
             } finally {
-                if (isMounted && loadTask.current === thisTask) setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         })();
 
         return () => { isMounted = false; };
     }, [currentFolder]);
 
-    /**
-     * Whenever the tool or folder changes, show the thumbnail view first and reset EXIF and selection.
-     */
+    // ----------- Lazy Load Visible Thumbnails -----------
     useEffect(() => {
-        setThumbView(true);
-        setExifData(null);
-        setActiveIndex(0);
-    }, [tool, currentFolder]);
+        // Only load first N thumbs at mount (virtual grid is better for huge folders, can add if needed)
+        const N = 100; // Tune as needed for your hardware
+        images.slice(0, N).forEach((img, idx) => {
+            if (!img.src) {
+                window.electronAPI.readImageAsDataUrl(img.filePath).then(dataUrl => {
+                    if (dataUrl) {
+                        setImages(oldImgs => {
+                            const newImgs = [...oldImgs];
+                            newImgs[idx] = { ...newImgs[idx], src: dataUrl };
+                            return newImgs;
+                        });
+                        setProgress(p => {
+                            const loaded = idx + 1;
+                            return Math.round((loaded / Math.max(images.length, 1)) * 100);
+                        });
+                    }
+                });
+            }
+        });
+    }, [images, currentFolder]);
 
-    /**
-     * When an image or the index changes, extract EXIF metadata.
-     * Uses piexifjs (client-side) to decode EXIF from base64 images.
-     */
+    // ----------- EXIF Loading for Current Image -----------
     useEffect(() => {
-        if (!images.length || !images[activeIndex] || !images[activeIndex].src) {
+        if (!images.length || !images[activeIndex] || !images[activeIndex].src || !showExif) {
             setExifData(null);
             return;
         }
@@ -158,36 +122,30 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         } catch {
             setExifData(null);
         }
-    }, [activeIndex, images]);
+    }, [activeIndex, images, showExif]);
 
-    /**
-     * Display helper: Get nice subfolder names for the dropdown.
-     */
+    // ----------- Folder Picker Display Helper -----------
     function displayFolder(folderPath: string) {
         if (!tool?.outputFolder) return folderPath;
         if (folderPath === tool.outputFolder) return "Root";
-        return folderPath.replace(tool.outputFolder, "").replace(/^\/|\\/, "");
+        return folderPath.replace(tool.outputFolder, "").replace(/^[/\\]/, "");
     }
 
-    // No images in the current folder?
-    const noImages = images.length === 0;
-
-    // ------ RENDER ------
+    // ----------- Render -----------
     return (
-        <div style={{ height: "100%", width: "100%", background: "#111", position: "relative" }}>
-            {/* ---------- Top Bar: Folder Picker & Back ---------- */}
-            <div className="flex items-center gap-4 p-3 absolute top-0 left-0 z-20">
-                {/* Back button: closes viewer */}
+        <div className="relative w-full h-full bg-[#111] flex flex-col" style={{ minHeight: 0, minWidth: 0 }}>
+            {/* Top Bar */}
+            <div className="flex items-center gap-4 p-3 z-20">
                 <button
                     onClick={() => {
                         setVisible(false);
+                        setThumbView(true);
                         setTimeout(onBack, 250);
                     }}
                     className="bg-gray-800 text-white px-4 py-2 rounded"
                 >
                     Back
                 </button>
-                {/* Dropdown to pick between root and subfolders */}
                 {folders.length > 1 && (
                     <select
                         className="bg-gray-900 text-white px-2 py-1 rounded"
@@ -203,7 +161,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 )}
             </div>
 
-            {/* ---------- Loading Progress ---------- */}
+            {/* Loading Progress Bar */}
             {isLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-black bg-opacity-80">
                     <div className="text-xl text-blue-300 mb-4">Scanning Images…</div>
@@ -217,16 +175,20 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 </div>
             )}
 
-            {/* ---------- Thumbnail Grid ---------- */}
+            {/* Grid Thumbnails */}
             {thumbView && !isLoading && images.length > 0 && (
-                <div className="flex flex-wrap justify-center items-center gap-4 pt-20">
+                <div
+                    className="flex flex-wrap justify-center items-center gap-4 pt-12 overflow-auto"
+                    style={{ width: "100%", height: "100%" }}
+                    ref={gridScrollRef}
+                >
                     {images.map((img, idx) => (
                         <div
                             key={img.alt + idx}
                             className="cursor-pointer hover:ring-4 ring-blue-400"
                             style={{
-                                width: 200,   // WIDER thumbnails
-                                height: 200,
+                                width: THUMB_SIZE,
+                                height: THUMB_SIZE,
                                 background: "#1c1c1c",
                                 borderRadius: 12,
                                 overflow: "hidden",
@@ -235,19 +197,20 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                                 alignItems: "center",
                                 justifyContent: "center"
                             }}
-                            // Clicking a thumb opens modal viewer at that image
                             onClick={() => {
                                 setActiveIndex(idx);
                                 setThumbView(false);
                                 setVisible(true);
+                                setShowExif(false);
                             }}
+                            title={img.alt}
                         >
                             <img
-                                src={img.src}
+                                src={img.src || ""}
                                 alt={img.alt}
                                 style={{
-                                    maxWidth: 200,
-                                    maxHeight: 190,
+                                    maxWidth: "96%",
+                                    maxHeight: "96%",
                                     borderRadius: 10,
                                     objectFit: "contain",
                                     background: "#fff"
@@ -258,57 +221,86 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 </div>
             )}
 
-            {/* ---------- Modal Image Viewer ---------- */}
-            <Viewer
-                visible={visible && !isLoading && images.length > 0 && !thumbView}
-                images={images}
-                activeIndex={activeIndex}
-                onChange={(obj: any) => {
-                    // Support both v4/v5 react-viewer API for onChange (index or {index})
-                    if (typeof obj === "number") setActiveIndex(obj);
-                    else if (obj && typeof obj["index"] === "number") setActiveIndex(obj["index"]);
-                }}
-                onClose={() => {
-                    setVisible(false);
-                    setTimeout(onBack, 250);
-                    setThumbView(true); // return to thumbs
-                }}
-                zIndex={9999}
-                drag={true}
-                noNavbar={false}
-                noToolbar={false}
-                scalable={true}
-                zoomable={true}
-                downloadable={true}
-                customToolbar={() => []}
-            />
+            {/* Single Image Viewer (zoomable, modal style, no info pane) */}
+            {!thumbView && images.length > 0 && (
+                <Viewer
+                    visible={visible}
+                    images={images.map(img => ({
+                        src: img.src || "",
+                        alt: img.alt
+                    }))}
+                    activeIndex={activeIndex}
+                    onChange={i => setActiveIndex(typeof i === "number" ? i : 0)}
+                    onClose={() => {
+                        setVisible(false);
+                        setThumbView(true);
+                        setShowExif(false);
+                    }}
+                    zIndex={9999}
+                    drag={true}
+                    noNavbar={false}
+                    noToolbar={false}
+                    scalable={true}
+                    zoomable={true}
+                    downloadable={true}
+                    customToolbar={toolbar =>
+                        [
+                            ...toolbar,
+                            {
+                                key: "exif",
+                                render: (
+                                    <button
+                                        key="exif"
+                                        title="Show EXIF"
+                                        className="react-viewer-toolbar-btn"
+                                        style={{ margin: "0 8px", padding: 4, borderRadius: 4 }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            setShowExif(true);
+                                        }}
+                                    >
+                                        🛈 EXIF
+                                    </button>
+                                ),
+                                onClick: () => setShowExif(true),
+                            }
+                        ]
+                    }
+                />
+            )}
 
-            {/* ---------- EXIF Sidebar ---------- */}
-            {(!isLoading && images.length > 0 && images[activeIndex] && exifData && !thumbView) && (
-                <div className="fixed right-0 top-0 m-6 max-w-lg max-h-[90vh] overflow-auto bg-white/90 dark:bg-gray-900/90 text-black dark:text-white rounded-xl shadow-xl p-4 z-[10000] border border-blue-400">
-                    <h3 className="text-lg font-bold mb-2">
-                        EXIF Metadata for <span className="font-mono">{images[activeIndex].alt}</span>
-                    </h3>
-                    <div className="text-xs max-h-[60vh] overflow-auto">
-                        {/* Show each EXIF IFD (e.g. "0th", "Exif", "GPS", etc) */}
-                        {exifData && Object.keys(exifData).map(ifd =>
-                                exifData[ifd] && Object.keys(exifData[ifd]).length > 0 && (
-                                    <div key={ifd} className="mb-2">
-                                        <div className="font-semibold text-blue-700 dark:text-blue-400">{ifd}</div>
-                                        {Object.entries(exifData[ifd]).map(([tag, val]) => (
-                                            <div key={tag} className="flex gap-2 py-0.5">
-                                                <div className="w-40 text-gray-700 dark:text-gray-200">{tag}</div>
-                                                <div className="flex-1 text-gray-900 dark:text-gray-50 break-words">{String(val)}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )
-                        )}
+            {/* EXIF Modal (appears on top of single image view only) */}
+            {showExif && images.length > 0 && images[activeIndex] && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[11000]">
+                    <div className="max-w-lg max-h-[90vh] overflow-auto bg-white/95 dark:bg-gray-900/95 text-black dark:text-white rounded-xl shadow-xl p-6 border border-blue-400 relative">
+                        <button
+                            className="absolute top-4 right-4 px-3 py-1 rounded bg-gray-300 hover:bg-gray-400 text-black dark:bg-gray-700 dark:text-white dark:hover:bg-gray-800"
+                            onClick={() => setShowExif(false)}
+                        > Close </button>
+                        <h3 className="text-lg font-bold mb-2">
+                            EXIF Metadata for <span className="font-mono">{images[activeIndex]?.alt || ""}</span>
+                        </h3>
+                        <div className="text-xs max-h-[60vh] overflow-auto">
+                            {exifData && Object.keys(exifData).map(ifd =>
+                                    exifData[ifd] && Object.keys(exifData[ifd]).length > 0 && (
+                                        <div key={ifd} className="mb-2">
+                                            <div className="font-semibold text-blue-700 dark:text-blue-400">{ifd}</div>
+                                            {Object.entries(exifData[ifd]).map(([tag, val]) => (
+                                                <div key={tag} className="flex gap-2 py-0.5">
+                                                    <div className="w-40 text-gray-700 dark:text-gray-200">{tag}</div>
+                                                    <div className="flex-1 text-gray-900 dark:text-gray-50 break-words">{String(val)}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                            )}
+                            {!exifData && <div className="text-gray-400">No EXIF data found.</div>}
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* ---------- Empty State (no images) ---------- */}
+            {/* Empty State */}
             {!isLoading && images.length === 0 && (
                 <div className="flex items-center justify-center h-full w-full absolute top-0 left-0 text-xl text-gray-400 bg-black bg-opacity-70 z-50">
                     No images found in this folder.

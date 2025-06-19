@@ -6,9 +6,29 @@ body {
     font-family: 'Inter', system-ui, sans-serif;
 }
 .react-viewer-navbar li img {
-    width: 150px !important;   /* Default is 66px */
+    width: 500px !important;   /* Default is 66px */
     height: 200px !important;  /* You can increase this as needed */
     object-fit: cover;
     border-radius: 8px;       /* Optional: rounded corners */
     margin: 4px 4px;
 }
+
+.react-viewer-list li img {
+    width: 100px !important;   /* Default is 66px */
+    height: 100px !important;  /* You can increase this as needed */
+    object-fit: cover;
+    border-radius: 8px;       /* Optional: rounded corners */
+    margin-top: 4px;
+    margin-left: 4px !important;
+    opacity: .6;
+}
+
+.react-viewer-list li {
+    width:80px !important;
+    height: 100px !important;
+}
+
+.react-viewer-navbar {
+    height: 100px !important;
+}
+aside[style*="width: 25vw"] { width: 28vw !important; }
