@@ -27,7 +27,7 @@ const MainView: React.FC<MainViewProps> = ({
     // Tool cards state
     const [tools, setTools] = useState<ToolConfig[]>([]);
     // Width of right info pane
-    const [infoPaneWidth, setInfoPaneWidth] = useState(25);
+    const [infoPaneWidth, setInfoPaneWidth] = useState(15);
     // Active tool for info pane display
     const [activeTool, setActiveTool] = useState<ToolConfig | null>(null);
     // Which view is active
@@ -187,8 +187,8 @@ const MainView: React.FC<MainViewProps> = ({
                     className="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-800 transition-all duration-200"
                     style={{
                         width: `${infoPaneWidth}vw`,
-                        minWidth: "220px",
-                        maxWidth: "640px",
+                        minWidth: "150px",
+                        maxWidth: "240px",
                     }}
                 >
                     <div className="p-6">
