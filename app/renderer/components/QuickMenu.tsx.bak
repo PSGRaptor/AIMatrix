@@ -1,5 +1,4 @@
 import React from "react";
-import ThemeToggle from "./ThemeToggle";
 
 // Theme Toggle SVG (Sun/Moon as one toggle)
 const IconTheme = ({ theme }: { theme: "dark" | "light" }) =>
@@ -63,71 +62,61 @@ type QuickMenuProps = {
     onConfigClick: () => void;
     theme: "dark" | "light";
     setTheme: (t: "dark" | "light") => void;
-    activeMenu: "cards" | "imageViewer" | "terminal";
-    terminalEnabled: boolean;
-    imageViewerEnabled: boolean;
-    onShowCards: () => void;
-    onShowImageViewer: () => void;
-    onShowTerminal: () => void;
 };
 
-const iconSize = "text-[2.4rem]"; // 20% larger
-
-const QuickMenu: React.FC<QuickMenuProps> = ({
-                                                 onConfigClick, theme, setTheme,
-                                                 activeMenu, terminalEnabled, imageViewerEnabled,
-                                                 onShowCards, onShowImageViewer, onShowTerminal
-                                             }) => {
+const QuickMenu: React.FC<QuickMenuProps> = ({ onConfigClick, theme, setTheme }) => {
     return (
-        <nav className={`flex flex-col items-center py-4 ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} w-[64px] h-full transition-colors`}>
-            {/* Cards (Home) */}
-            <button
-                className={`mb-6 ${activeMenu === "cards" ? "text-blue-500" : "opacity-70"} ${iconSize}`}
-                aria-label="Cards"
-                title="Show Tool Cards"
-                onClick={onShowCards}
-                tabIndex={0}
-            >
-                <span role="img" aria-label="cards">🗂️</span>
+        <nav
+            className={`flex flex-col items-center py-4 w-[78px] h-full border-r transition-colors duration-300
+                ${theme === "dark"
+                ? "bg-gray-900 border-gray-800"
+                : "bg-gray-100 border-gray-200"
+            }`}
+            style={{ minWidth: 78, zIndex: 20 }}
+        >
+            {/* Top Icons */}
+            <button className="mb-8" aria-label="Cards">
+                <IconCards theme={theme} />
             </button>
-            {/* Image Viewer */}
-            <button
-                className={`mb-6 ${imageViewerEnabled ? (activeMenu === "imageViewer" ? "text-blue-500" : "text-gray-700 dark:text-white hover:text-blue-400") : "opacity-50 cursor-not-allowed"} ${iconSize}`}
-                aria-label="Image Viewer"
-                title={imageViewerEnabled ? "Show Image Viewer" : "Open a tool with outputs to enable"}
-                onClick={imageViewerEnabled ? onShowImageViewer : undefined}
-                disabled={!imageViewerEnabled}
-                tabIndex={imageViewerEnabled ? 0 : -1}
-                style={{ pointerEvents: imageViewerEnabled ? undefined : "none" }}
-            >
-                <span role="img" aria-label="image viewer">🖼️</span>
+            <button className="mb-8 opacity-50 cursor-not-allowed" aria-label="Image Viewer" disabled>
+                <IconImage theme={theme} />
             </button>
-            {/* Terminal */}
-            <button
-                className={`mb-6 ${terminalEnabled ? (activeMenu === "terminal" ? "text-blue-500" : "text-gray-700 dark:text-white hover:text-blue-400") : "opacity-50 cursor-not-allowed"} ${iconSize}`}
-                aria-label="Terminal"
-                title={terminalEnabled ? "Show Terminal" : "Open a tool with terminal to enable"}
-                onClick={terminalEnabled ? onShowTerminal : undefined}
-                disabled={!terminalEnabled}
-                tabIndex={terminalEnabled ? 0 : -1}
-                style={{ pointerEvents: terminalEnabled ? undefined : "none" }}
-            >
-                <span role="img" aria-label="terminal">💻</span>
+            <button className="mb-8 opacity-50 cursor-not-allowed" aria-label="Terminal" disabled>
+                <IconTerminal theme={theme} />
             </button>
 
             <div className="flex-1" />
-            {/* Theme Toggle */}
-            <div className="mb-6">
-                <ThemeToggle theme={theme} setTheme={setTheme} />
-            </div>
-            {/* Settings */}
+
+            {/* Theme Toggle above gear icon */}
+            <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className={`
+                    mb-5 w-14 h-14 rounded-full flex items-center justify-center border-2
+                    transition-colors duration-300
+                    ${theme === "dark"
+                    ? "bg-gray-800 text-white "
+                    : "bg-gray-200 text-gray-800 border-blue-300 shadow-md"}
+                `}
+                title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+                aria-label="Theme toggle"
+            >
+                <IconTheme theme={theme} />
+            </button>
+
+            {/* Settings (Gear) Icon */}
             <button
                 onClick={onConfigClick}
                 aria-label="Settings"
-                title="Settings"
-                className={`mb-2 ${iconSize}`}
+                title="Settings add tool"
+                className={`
+                    w-14 h-14 flex items-center justify-center rounded-full
+                    ${theme === "dark"
+                    ? "hover:bg-blue-800/40"
+                    : "hover:bg-blue-200/60"}
+                    transition
+                `}
             >
-                <span role="img" aria-label="settings">⚙️</span>
+                <IconSettings theme={theme} />
             </button>
         </nav>
     );

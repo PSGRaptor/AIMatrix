@@ -46,7 +46,7 @@ function createWindow() {
     if (process.env.NODE_ENV === "development") {
         console.log("Development Build - Loading URL:", "http://localhost:5173");
         mainWindow.loadURL("http://localhost:5173");
-        mainWindow.webContents.openDevTools({ mode: 'detach' });
+        //mainWindow.webContents.openDevTools({ mode: 'detach' });
         mainWindow.webContents.on('did-finish-load', () => {
             console.log('Window finished loading.');
         });
