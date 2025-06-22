@@ -1,11 +1,15 @@
 // app/renderer/components/QuickMenu.tsx
 
 import React from 'react';
-// Import SVGs as React components
-import CardsIcon from '../assets/icons/cards.svg?react';
-import ImagesIcon from '../assets/icons/images.svg?react';
-import TerminalIcon from '../assets/icons/terminal.svg?react';
-import SettingsIcon from '../assets/icons/settings.svg?react';
+// Import SVGs as React components for both dark and light mode
+import CardsIconDark from '../assets/icons/cards-dark.svg?react';
+import CardsIconLight from '../assets/icons/cards-light.svg?react';
+import ImagesIconDark from '../assets/icons/images-dark.svg?react';
+import ImagesIconLight from '../assets/icons/images-light.svg?react';
+import TerminalIconDark from '../assets/icons/terminal-dark.svg?react';
+import TerminalIconLight from '../assets/icons/terminal-light.svg?react';
+import SettingsIconDark from '../assets/icons/settings-dark.svg?react';
+import SettingsIconLight from '../assets/icons/settings-light.svg?react';
 import ThemeDarkIcon from '../assets/icons/theme-dark.svg?react';
 import ThemeLightIcon from '../assets/icons/theme-light.svg?react';
 
@@ -13,11 +17,18 @@ type QuickMenuProps = {
     onConfigClick: () => void;
     theme: "dark" | "light";
     setTheme: (t: "dark" | "light") => void;
-    activeMenu?: "cards" | "imageViewer" | "terminal";
+    activeMenu?: string;
     setActiveMenu?: (type: "cards" | "imageViewer" | "terminal") => void;
 };
 
 const ICON_SIZE = 32; // 20% larger than original
+
+// Helper to pick icon based on theme
+function pickIcon(theme: string, LightIcon: any, DarkIcon: any) {
+    return theme === "dark"
+        ? <DarkIcon width={ICON_SIZE} height={ICON_SIZE} />
+        : <LightIcon width={ICON_SIZE} height={ICON_SIZE} />;
+}
 
 export default function QuickMenu({
                                       onConfigClick,
@@ -85,7 +96,7 @@ export default function QuickMenu({
                 active={activeMenu === "cards"}
                 disabled={false}
             >
-                <CardsIcon width={ICON_SIZE} height={ICON_SIZE} />
+                {pickIcon(theme, CardsIconLight, CardsIconDark)}
             </IconButton>
             <IconButton
                 onClick={() => setActiveMenu && setActiveMenu("imageViewer")}
@@ -93,7 +104,7 @@ export default function QuickMenu({
                 active={activeMenu === "imageViewer"}
                 disabled={!setActiveMenu}
             >
-                <ImagesIcon width={ICON_SIZE} height={ICON_SIZE} />
+                {pickIcon(theme, ImagesIconLight, ImagesIconDark)}
             </IconButton>
             <IconButton
                 onClick={() => setActiveMenu && setActiveMenu("terminal")}
@@ -101,7 +112,7 @@ export default function QuickMenu({
                 active={activeMenu === "terminal"}
                 disabled={!setActiveMenu}
             >
-                <TerminalIcon width={ICON_SIZE} height={ICON_SIZE} />
+                {pickIcon(theme, TerminalIconLight, TerminalIconDark)}
             </IconButton>
 
             {/* Theme Toggle Icon */}
@@ -121,7 +132,7 @@ export default function QuickMenu({
                 onClick={onConfigClick}
                 label="Settings"
             >
-                <SettingsIcon width={ICON_SIZE} height={ICON_SIZE} />
+                {pickIcon(theme, SettingsIconLight, SettingsIconDark)}
             </IconButton>
         </nav>
     );

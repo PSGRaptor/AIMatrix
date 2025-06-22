@@ -55,3 +55,9 @@ dist/
 
 ### Mac OS ###
 .DS_Store
+/app/renderer/assets/icons/cards.psd
+/app/renderer/assets/icons/terminal.psd
+/app/renderer/assets/icons/settings.psd
+/app/renderer/assets/icons/images.psd
+/app/renderer/assets/icons/theme-dark.psd
+/app/renderer/assets/icons/theme-light.psd
