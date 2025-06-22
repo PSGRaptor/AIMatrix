@@ -1,0 +1,12 @@
+{
+  "name": "Invoke AI",
+  "icon": "icons/icon_1750179646348.ico",
+  "description": "Invoke AI - txt2img, img2img editor and inpainting tool ",
+  "toolRoot": "Y:\\_invokeai",
+  "url": "http://127.0.0.1:9090",
+  "outputFolder": "D:\\_Outputs\\InvokeAI\\images",
+  "updateCommand": "",
+  "startCommand": "Y:\\_invokeai\\invokeAIM.bat",
+  "lastModified": "2025-06-17T17:02:24.407Z",
+  "createdAt": "2025-06-17T17:02:13.827Z"
+}
