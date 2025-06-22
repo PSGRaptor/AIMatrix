@@ -1,136 +1,128 @@
-import React from "react";
-import ThemeToggle from "./ThemeToggle";
+// app/renderer/components/QuickMenu.tsx
 
-// Theme Toggle SVG (Sun/Moon as one toggle)
-const IconTheme = ({ theme }: { theme: "dark" | "light" }) =>
-    theme === "dark" ? (
-        // Sun for Light Mode
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-             stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="5" />
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-        </svg>
-    ) : (
-        // Moon for Dark Mode
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-             stroke="#22223b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />
-        </svg>
-    );
-
-// Cards icon
-const IconCards = ({ theme }: { theme: "dark" | "light" }) => (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-         stroke={theme === "dark" ? "#f1f5f9" : "#22223b"}
-         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <path d="M7 5v14M17 5v14" opacity=".3" />
-    </svg>
-);
-
-// Image Viewer icon
-const IconImage = ({ theme }: { theme: "dark" | "light" }) => (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-         stroke={theme === "dark" ? "#f1f5f9" : "#22223b"}
-         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <circle cx="8" cy="8" r="2.5" />
-        <path d="M21 15l-5-5L5 21" />
-    </svg>
-);
-
-// Terminal icon
-const IconTerminal = ({ theme }: { theme: "dark" | "light" }) => (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-         stroke={theme === "dark" ? "#f1f5f9" : "#22223b"}
-         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="16" rx="2" />
-        <path d="M8 10l2 2-2 2m4 2h4" />
-    </svg>
-);
-
-// Settings (Gear) icon
-const IconSettings = ({ theme }: { theme: "dark" | "light" }) => (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-         stroke={theme === "dark" ? "#60a5fa" : "#2563eb"}
-         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.16a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 12.89V12a1.65 1.65 0 0 0-1-1.51V11a2 2 0 0 1 0-4v.09A1.65 1.65 0 0 0 5 8.84c.42 0 .83-.16 1.14-.46.31-.31.47-.73.46-1.14A1.65 1.65 0 0 0 8 3.05V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 16 4.84c.42 0 .83.16 1.14.46.31.31.47.73.46 1.14A1.65 1.65 0 0 0 19 7.05V7a2 2 0 0 1 0 4v-.09A1.65 1.65 0 0 0 19.4 15Z" />
-    </svg>
-);
+import React from 'react';
+// Import SVGs as React components
+import CardsIcon from '../assets/icons/cards.svg?react';
+import ImagesIcon from '../assets/icons/images.svg?react';
+import TerminalIcon from '../assets/icons/terminal.svg?react';
+import SettingsIcon from '../assets/icons/settings.svg?react';
+import ThemeDarkIcon from '../assets/icons/theme-dark.svg?react';
+import ThemeLightIcon from '../assets/icons/theme-light.svg?react';
 
 type QuickMenuProps = {
     onConfigClick: () => void;
     theme: "dark" | "light";
     setTheme: (t: "dark" | "light") => void;
-    activeMenu: "cards" | "imageViewer" | "terminal";
-    terminalEnabled: boolean;
-    imageViewerEnabled: boolean;
-    onShowCards: () => void;
-    onShowImageViewer: () => void;
-    onShowTerminal: () => void;
+    activeMenu?: "cards" | "imageViewer" | "terminal";
+    setActiveMenu?: (type: "cards" | "imageViewer" | "terminal") => void;
 };
 
-const iconSize = "text-[2.4rem]"; // 20% larger
+const ICON_SIZE = 32; // 20% larger than original
 
-const QuickMenu: React.FC<QuickMenuProps> = ({
-                                                 onConfigClick, theme, setTheme,
-                                                 activeMenu, terminalEnabled, imageViewerEnabled,
-                                                 onShowCards, onShowImageViewer, onShowTerminal
-                                             }) => {
-    return (
-        <nav className={`flex flex-col items-center py-4 ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} w-[64px] h-full transition-colors`}>
-            {/* Cards (Home) */}
-            <button
-                className={`mb-6 ${activeMenu === "cards" ? "text-blue-500" : "opacity-70"} ${iconSize}`}
-                aria-label="Cards"
-                title="Show Tool Cards"
-                onClick={onShowCards}
-                tabIndex={0}
-            >
-                <span role="img" aria-label="cards">🗂️</span>
-            </button>
-            {/* Image Viewer */}
-            <button
-                className={`mb-6 ${imageViewerEnabled ? (activeMenu === "imageViewer" ? "text-blue-500" : "text-gray-700 dark:text-white hover:text-blue-400") : "opacity-50 cursor-not-allowed"} ${iconSize}`}
-                aria-label="Image Viewer"
-                title={imageViewerEnabled ? "Show Image Viewer" : "Open a tool with outputs to enable"}
-                onClick={imageViewerEnabled ? onShowImageViewer : undefined}
-                disabled={!imageViewerEnabled}
-                tabIndex={imageViewerEnabled ? 0 : -1}
-                style={{ pointerEvents: imageViewerEnabled ? undefined : "none" }}
-            >
-                <span role="img" aria-label="image viewer">🖼️</span>
-            </button>
-            {/* Terminal */}
-            <button
-                className={`mb-6 ${terminalEnabled ? (activeMenu === "terminal" ? "text-blue-500" : "text-gray-700 dark:text-white hover:text-blue-400") : "opacity-50 cursor-not-allowed"} ${iconSize}`}
-                aria-label="Terminal"
-                title={terminalEnabled ? "Show Terminal" : "Open a tool with terminal to enable"}
-                onClick={terminalEnabled ? onShowTerminal : undefined}
-                disabled={!terminalEnabled}
-                tabIndex={terminalEnabled ? 0 : -1}
-                style={{ pointerEvents: terminalEnabled ? undefined : "none" }}
-            >
-                <span role="img" aria-label="terminal">💻</span>
-            </button>
+export default function QuickMenu({
+                                      onConfigClick,
+                                      theme,
+                                      setTheme,
+                                      activeMenu,
+                                      setActiveMenu,
+                                  }: QuickMenuProps) {
+    // Tooltip color class depending on theme
+    const tooltipClass = theme === "dark"
+        ? "bg-black text-white border-white"
+        : "bg-blue-100 text-blue-900 border-blue-500";
 
-            <div className="flex-1" />
-            {/* Theme Toggle */}
-            <div className="mb-6">
-                <ThemeToggle theme={theme} setTheme={setTheme} />
+    // Helper for icon buttons with tooltips
+    function IconButton({
+                            children,
+                            onClick,
+                            label,
+                            active,
+                            disabled
+                        }: {
+        children: React.ReactNode;
+        onClick?: () => void;
+        label: string;
+        active?: boolean;
+        disabled?: boolean;
+    }) {
+        return (
+            <div className="relative flex flex-col items-center mb-7 group">
+                <button
+                    className={`
+                        flex items-center justify-center rounded-full w-12 h-12
+                        transition-all duration-150
+                        ${active ? (theme === "dark" ? "bg-white/20" : "bg-blue-200") : ""}
+                        ${disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-110"}
+                    `}
+                    onClick={disabled ? undefined : onClick}
+                    aria-label={label}
+                    tabIndex={disabled ? -1 : 0}
+                    disabled={disabled}
+                    type="button"
+                >
+                    {children}
+                </button>
+                {/* Tooltip */}
+                <span
+                    className={`pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs rounded px-2 py-1 border shadow
+                    opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
+                    ${tooltipClass}
+                    `}
+                    style={{ whiteSpace: 'nowrap', zIndex: 20, transition: 'opacity 0.2s' }}
+                >
+                    {label}
+                </span>
             </div>
-            {/* Settings */}
-            <button
-                onClick={onConfigClick}
-                aria-label="Settings"
-                title="Settings"
-                className={`mb-2 ${iconSize}`}
+        );
+    }
+
+    return (
+        <nav className={`flex flex-col items-center py-4 ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} w-[72px] h-full transition-colors duration-200`}>
+            {/* Main App Icons */}
+            <IconButton
+                onClick={() => setActiveMenu && setActiveMenu("cards")}
+                label="Tool Cards"
+                active={activeMenu === "cards"}
+                disabled={false}
             >
-                <span role="img" aria-label="settings">⚙️</span>
-            </button>
+                <CardsIcon width={ICON_SIZE} height={ICON_SIZE} />
+            </IconButton>
+            <IconButton
+                onClick={() => setActiveMenu && setActiveMenu("imageViewer")}
+                label="Image Viewer"
+                active={activeMenu === "imageViewer"}
+                disabled={!setActiveMenu}
+            >
+                <ImagesIcon width={ICON_SIZE} height={ICON_SIZE} />
+            </IconButton>
+            <IconButton
+                onClick={() => setActiveMenu && setActiveMenu("terminal")}
+                label="Terminal"
+                active={activeMenu === "terminal"}
+                disabled={!setActiveMenu}
+            >
+                <TerminalIcon width={ICON_SIZE} height={ICON_SIZE} />
+            </IconButton>
+
+            {/* Theme Toggle Icon */}
+            <div className="mb-10 mt-auto">
+                <IconButton
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    label={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+                >
+                    {theme === "dark"
+                        ? <ThemeLightIcon width={ICON_SIZE} height={ICON_SIZE} />
+                        : <ThemeDarkIcon width={ICON_SIZE} height={ICON_SIZE} />}
+                </IconButton>
+            </div>
+
+            {/* Settings */}
+            <IconButton
+                onClick={onConfigClick}
+                label="Settings"
+            >
+                <SettingsIcon width={ICON_SIZE} height={ICON_SIZE} />
+            </IconButton>
         </nav>
     );
-};
-
-export default QuickMenu;
+}

@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.1.7.3",
+  "version": "0.1.7.5",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -19,12 +19,19 @@
     "mime": "2.6.0",
     "node-pty": "^1.0.0",
     "piexifjs": "^1.0.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-viewer": "^3.2.2",
+    "png-chunk-text": "^1.0.0",
+    "png-chunks-extract": "^1.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-viewer-aim": "file:F:/_AI-Projects/react-viewer-aim",
     "react-window": "^1.8.11",
     "tiff": "^6.2.0",
+    "vite-plugin-svgr": "^4.3.0",
     "xterm": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@types/react": "^18.0.0",
+    "react": "^18.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.10",

@@ -30,13 +30,17 @@ body {
 
 .react-viewer-navbar {
     height: 100px !important;
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
 }
-/*
-aside[style*="width: 15vw"] { width: 27vw !important; max-width:250px !important;}
- */
 
 aside[style*="width: 15vw"] {
     width: 25vw !important;
     min-width: 220px !important;
     max-width: 330px !important;
+}
+
+.react-viewer-toolbar-btn {
+    margin: -4px -6px !important;
 }
