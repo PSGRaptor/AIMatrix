@@ -16,7 +16,7 @@ type ImageViewerPaneProps = {
 
 type ImageFile = { src: string; alt: string; filePath: string };
 
-// Extracts PNG tEXt chunks (for PNG metadata)
+// Extract PNG tEXt chunks for metadata
 function extractPngTextChunks(dataUrl: string): Record<string, string> {
     try {
         const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
@@ -28,7 +28,7 @@ function extractPngTextChunks(dataUrl: string): Record<string, string> {
                 try {
                     const textData = PNGtext.decode(chunk.data);
                     texts[textData.keyword] = textData.text;
-                } catch (err) { }
+                } catch (err) {}
             }
         }
         return texts;
@@ -38,25 +38,20 @@ function extractPngTextChunks(dataUrl: string): Record<string, string> {
 }
 
 const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
+    // --- State ---
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [folders, setFolders] = useState<string[]>([]);
     const [images, setImages] = useState<ImageFile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [progress, setProgress] = useState(0);
-
-    // View state: grid of thumbs, or single image modal
     const [thumbView, setThumbView] = useState(true);
     const [activeIndex, setActiveIndex] = useState<number>(0);
     const [visible, setVisible] = useState(false);
-
-    // EXIF modal for current image (never resets index!)
     const [showExif, setShowExif] = useState(false);
     const [exifData, setExifData] = useState<any | null>(null);
-
-    // Used for scroll restore (optional)
     const gridScrollRef = useRef<HTMLDivElement>(null);
 
-    // On tool/folder change, load folders and images
+    // --- On Tool Change: reset all state, load folders ---
     useEffect(() => {
         setThumbView(true);
         setShowExif(false);
@@ -83,7 +78,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         })();
     }, [tool]);
 
-    // On current folder change, load image list
+    // --- On Folder Change: scan images, reset progress ---
     useEffect(() => {
         let isMounted = true;
         setImages([]);
@@ -115,7 +110,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         return () => { isMounted = false; };
     }, [currentFolder]);
 
-    // Lazy-load first 100 thumbnails (increase N as you wish)
+    // --- Lazy load thumbnails: only N at once for memory ---
     useEffect(() => {
         const N = 100;
         images.slice(0, N).forEach((img, idx) => {
@@ -137,7 +132,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         });
     }, [images, currentFolder]);
 
-    // EXIF/METADATA loading (never resets index!)
+    // --- EXIF/METADATA loading for current image ---
     useEffect(() => {
         if (!showExif) return;
         if (!images.length || !images[activeIndex] || !images[activeIndex].src) {
@@ -157,17 +152,17 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         }
     }, [activeIndex, images, showExif]);
 
-    // Folder name for dropdown
+    // --- Helper for folder dropdown ---
     function displayFolder(folderPath: string) {
         if (!tool?.outputFolder) return folderPath;
         if (folderPath === tool.outputFolder) return "Root";
         return folderPath.replace(tool.outputFolder, "").replace(/^[/\\]/, "");
     }
 
-    // ---------- RENDER ----------
+    // --- RENDER ---
     return (
         <div className="relative w-full h-full bg-[#111] flex flex-col" style={{ minHeight: 0, minWidth: 0 }}>
-            {/* Top bar: Back & folders */}
+            {/* --- Top Bar: Back & Folders (always visible!) --- */}
             <div className="flex items-center gap-4 p-3 z-20">
                 <button
                     onClick={() => {
@@ -196,9 +191,9 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 )}
             </div>
 
-            {/* Progress overlay */}
+            {/* --- Progress overlay when loading --- */}
             {isLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-black bg-opacity-80">
+                <div className="flex flex-col items-center justify-center py-12">
                     <div className="text-xl text-blue-300 mb-4">Scanning Images…</div>
                     <div className="w-2/3 h-4 bg-gray-800 rounded overflow-hidden mb-2">
                         <div
@@ -210,14 +205,18 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 </div>
             )}
 
-            {/* Grid thumbnails */}
-            {thumbView && !isLoading && images.length > 0 && (
+            {/* --- Grid Thumbnails (no info pane) --- */}
+            {thumbView && !isLoading && (
                 <div
                     className="flex flex-wrap justify-center items-center gap-4 pt-12 overflow-auto"
                     style={{ width: "100%", height: "100%" }}
                     ref={gridScrollRef}
                 >
-                    {images.map((img, idx) => (
+                    {images.length === 0 ? (
+                        <div className="text-xl text-gray-400 mt-10 select-none">
+                            No images found in this folder.
+                        </div>
+                    ) : images.map((img, idx) => (
                         <div
                             key={img.alt + idx}
                             className="cursor-pointer hover:ring-4 ring-blue-400"
@@ -241,8 +240,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                             }}
                             title={img.alt}
                         >
-                            {/* Only render img if src is set! */}
-                            {img.src && (
+                            {img.src ? (
                                 <img
                                     src={img.src}
                                     alt={img.alt}
@@ -254,13 +252,13 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                                         background: "#fff"
                                     }}
                                 />
-                            )}
+                            ) : null}
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Single Image Viewer (zoomable modal, no info pane) */}
+            {/* --- Single Image Viewer (zoomable, modal style) --- */}
             {!thumbView && images.length > 0 && (
                 <Viewer
                     visible={visible}
@@ -317,7 +315,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 />
             )}
 
-            {/* EXIF Modal */}
+            {/* --- EXIF Modal for current image --- */}
             {showExif && images.length > 0 && images[activeIndex] && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[11000]">
                     <div className="max-w-lg max-h-[90vh] overflow-auto bg-white/95 dark:bg-gray-900/95 text-black dark:text-white rounded-xl shadow-xl p-6 border border-blue-400 relative">
@@ -361,13 +359,6 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                             )}
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Empty state */}
-            {!isLoading && images.length === 0 && (
-                <div className="flex items-center justify-center h-full w-full absolute top-0 left-0 text-xl text-gray-400 bg-black bg-opacity-70 z-50">
-                    No images found in this folder.
                 </div>
             )}
         </div>
