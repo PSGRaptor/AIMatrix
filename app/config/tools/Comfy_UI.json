@@ -1,12 +1,12 @@
 {
   "name": "Comfy UI",
   "icon": "icons/icon_1750180010532.ico",
-  "description": "ComfyUI is a node based txt2img, img2img workflow oriented graphic tool",
+  "description": "A node based txt2img, img2img workflow oriented graphic tool",
   "toolRoot": "Y:\\_ComfyUI_windows_portable\\ComfyUI",
   "url": "http://127.0.0.1/8188",
   "outputFolder": "D:\\_Outputs\\SM-ComfyUI\\",
   "updateCommand": "",
   "startCommand": "Y:\\_ComfyUI_windows_portable\\run_nvidia_gpu.bat",
-  "lastModified": "2025-06-19T12:46:13.368Z",
+  "lastModified": "2025-06-22T21:14:27.158Z",
   "createdAt": "2025-06-17T17:05:38.968Z"
 }

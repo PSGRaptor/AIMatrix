@@ -1,24 +1,22 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+// app/renderer/components/ImageViewerPane.tsx
+
+import React, { useEffect, useState, useRef } from "react";
 import { ToolConfig } from "../env";
 import Viewer from "react-viewer-aim";
 import piexif from "piexifjs";
 import chunksExtract from "png-chunks-extract";
 import PNGtext from "png-chunk-text";
-import { FixedSizeGrid as Grid } from "react-window";
 
 const THUMB_SIZE = 220;
-const GRID_GAP = 16; // px gap between cells
-const GRID_BUFFER_ROWS = 2; // how many rows before/after viewport to render
 
 type ImageViewerPaneProps = {
     tool: ToolConfig | null;
     onBack: () => void;
 };
 
-type ImageFile = { alt: string; filePath: string };
-type ThumbCache = Record<number, string>; // index => base64
+type ImageFile = { src: string; alt: string; filePath: string };
 
-// Extracts PNG tEXt chunks (for PNG metadata)
+// Extract PNG tEXt chunks for metadata
 function extractPngTextChunks(dataUrl: string): Record<string, string> {
     try {
         const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
@@ -30,7 +28,7 @@ function extractPngTextChunks(dataUrl: string): Record<string, string> {
                 try {
                     const textData = PNGtext.decode(chunk.data);
                     texts[textData.keyword] = textData.text;
-                } catch {}
+                } catch (err) {}
             }
         }
         return texts;
@@ -40,14 +38,10 @@ function extractPngTextChunks(dataUrl: string): Record<string, string> {
 }
 
 const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
-    // --- Folder navigation ---
+    // --- State ---
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [folders, setFolders] = useState<string[]>([]);
-    // --- Flat file list (not base64!) ---
     const [images, setImages] = useState<ImageFile[]>([]);
-    // --- Loaded thumbs (base64, virtualized by index) ---
-    const [thumbs, setThumbs] = useState<ThumbCache>({});
-    // --- UI state ---
     const [isLoading, setIsLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [thumbView, setThumbView] = useState(true);
@@ -55,22 +49,19 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
     const [visible, setVisible] = useState(false);
     const [showExif, setShowExif] = useState(false);
     const [exifData, setExifData] = useState<any | null>(null);
-
-    // Grid ref for focus restore if you wish
     const gridScrollRef = useRef<HTMLDivElement>(null);
 
-    // --- Tool/folder loading (names only) ---
+    // --- On Tool Change: reset all state, load folders ---
     useEffect(() => {
         setThumbView(true);
         setShowExif(false);
         setVisible(false);
         setImages([]);
-        setThumbs({});
         setProgress(0);
         setExifData(null);
         setActiveIndex(0);
 
-        if (!tool?.outputFolder) {
+        if (!tool || !tool.outputFolder) {
             setCurrentFolder(null);
             setFolders([]);
             return;
@@ -87,11 +78,10 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         })();
     }, [tool]);
 
-    // --- Scan image names in folder (NOT base64) ---
+    // --- On Folder Change: scan images, reset progress ---
     useEffect(() => {
         let isMounted = true;
         setImages([]);
-        setThumbs({});
         setProgress(0);
         setExifData(null);
         setActiveIndex(0);
@@ -105,6 +95,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 const imageArr: ImageFile[] = files
                     .filter(filename => !!filename)
                     .map(filename => ({
+                        src: "",
                         alt: filename,
                         filePath: `${currentFolder}/${filename}`,
                     }));
@@ -119,35 +110,36 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         return () => { isMounted = false; };
     }, [currentFolder]);
 
-    // --- Load a thumbnail (just-in-time), returns promise ---
-    const loadThumb = useCallback((idx: number) => {
-        const img = images[idx];
-        if (!img || thumbs[idx]) return; // already loaded
-        window.electronAPI.readImageAsDataUrl(img.filePath).then(dataUrl => {
-            if (dataUrl) {
-                setThumbs(old => ({ ...old, [idx]: dataUrl }));
+    // --- Lazy load thumbnails: only N at once for memory ---
+    useEffect(() => {
+        const N = 100;
+        images.slice(0, N).forEach((img, idx) => {
+            if (!img.src) {
+                window.electronAPI.readImageAsDataUrl(img.filePath).then(dataUrl => {
+                    if (dataUrl) {
+                        setImages(oldImgs => {
+                            const newImgs = [...oldImgs];
+                            newImgs[idx] = { ...newImgs[idx], src: dataUrl };
+                            return newImgs;
+                        });
+                        setProgress(p => {
+                            const loaded = idx + 1;
+                            return Math.round((loaded / Math.max(images.length, 1)) * 100);
+                        });
+                    }
+                });
             }
-            setProgress((loaded) => {
-                // For better UI, count loaded images
-                const total = images.length || 1;
-                const nLoaded = Object.keys(thumbs).length + 1;
-                return Math.round((nLoaded / total) * 100);
-            });
         });
-    }, [images, thumbs]);
+    }, [images, currentFolder]);
 
-    // --- EXIF/METADATA loading for current image (when requested) ---
+    // --- EXIF/METADATA loading for current image ---
     useEffect(() => {
         if (!showExif) return;
-        if (!(activeIndex in thumbs)) {
+        if (!images.length || !images[activeIndex] || !images[activeIndex].src) {
             setExifData(null);
             return;
         }
-        const src = thumbs[activeIndex];
-        if (!src) {
-            setExifData(null);
-            return;
-        }
+        const src = images[activeIndex].src;
         if (src.startsWith("data:image/png")) {
             setExifData(extractPngTextChunks(src));
         } else {
@@ -158,7 +150,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 setExifData(null);
             }
         }
-    }, [activeIndex, thumbs, showExif]);
+    }, [activeIndex, images, showExif]);
 
     // --- Helper for folder dropdown ---
     function displayFolder(folderPath: string) {
@@ -167,83 +159,10 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         return folderPath.replace(tool.outputFolder, "").replace(/^[/\\]/, "");
     }
 
-    // --- VIRTUALIZED GRID SETUP ---
-    // Responsive: calculate columns by container width
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [containerWidth, setContainerWidth] = useState(1200); // fallback
-
-    useEffect(() => {
-        // Track container size for responsive grid
-        function handleResize() {
-            if (containerRef.current) {
-                setContainerWidth(containerRef.current.offsetWidth);
-            }
-        }
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-    useEffect(() => {
-        if (containerRef.current) {
-            setContainerWidth(containerRef.current.offsetWidth);
-        }
-    }, [thumbView, images.length]);
-
-    const colCount = Math.max(1, Math.floor(containerWidth / (THUMB_SIZE + GRID_GAP)));
-    const rowCount = Math.ceil(images.length / colCount);
-
-    // --- Grid Cell Renderer ---
-    const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
-        const idx = rowIndex * colCount + columnIndex;
-        if (idx >= images.length) return null;
-        const img = images[idx];
-        // JIT load the thumb if not loaded
-        if (!thumbs[idx]) {
-            loadThumb(idx);
-        }
-        return (
-            <div
-                style={{
-                    ...style,
-                    left: (style.left as number) + GRID_GAP,
-                    top: (style.top as number) + GRID_GAP,
-                    width: THUMB_SIZE,
-                    height: THUMB_SIZE,
-                    padding: 0,
-                }}
-                className="flex items-center justify-center bg-[#1c1c1c] rounded-xl shadow-lg cursor-pointer hover:ring-4 ring-blue-400"
-                title={img.alt}
-                onClick={() => {
-                    setActiveIndex(idx);
-                    setThumbView(false);
-                    setVisible(true);
-                    setShowExif(false);
-                    setExifData(null);
-                }}
-            >
-                {thumbs[idx] ? (
-                    <img
-                        src={thumbs[idx]}
-                        alt={img.alt}
-                        style={{
-                            maxWidth: "96%",
-                            maxHeight: "96%",
-                            borderRadius: 10,
-                            objectFit: "contain",
-                            background: "#fff"
-                        }}
-                    />
-                ) : (
-                    <div className="text-xs text-gray-600">Loading...</div>
-                )}
-            </div>
-        );
-    };
-
     // --- RENDER ---
     return (
         <div className="relative w-full h-full bg-[#111] flex flex-col" style={{ minHeight: 0, minWidth: 0 }}>
-            {/* --- Top Bar: Back & Folders --- */}
+            {/* --- Top Bar: Back & Folders (always visible!) --- */}
             <div className="flex items-center gap-4 p-3 z-20">
                 <button
                     onClick={() => {
@@ -286,30 +205,56 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 </div>
             )}
 
-            {/* --- Virtualized Thumbnail Grid --- */}
+            {/* --- Grid Thumbnails (no info pane) --- */}
             {thumbView && !isLoading && (
                 <div
-                    ref={containerRef}
-                    className="flex-1 w-full h-full pt-8 pb-4 overflow-auto"
-                    style={{ minHeight: 0, minWidth: 0 }}
+                    className="flex flex-wrap justify-center items-center gap-4 pt-12 overflow-auto"
+                    style={{ width: "100%", height: "100%" }}
+                    ref={gridScrollRef}
                 >
                     {images.length === 0 ? (
                         <div className="text-xl text-gray-400 mt-10 select-none">
                             No images found in this folder.
                         </div>
-                    ) : (
-                        <Grid
-                            columnCount={colCount}
-                            rowCount={rowCount}
-                            columnWidth={THUMB_SIZE + GRID_GAP}
-                            rowHeight={THUMB_SIZE + GRID_GAP}
-                            width={containerWidth}
-                            height={window.innerHeight - 110}
-                            overscanRowCount={GRID_BUFFER_ROWS}
+                    ) : images.map((img, idx) => (
+                        <div
+                            key={img.alt + idx}
+                            className="cursor-pointer hover:ring-4 ring-blue-400"
+                            style={{
+                                width: THUMB_SIZE,
+                                height: THUMB_SIZE,
+                                background: "#1c1c1c",
+                                borderRadius: 12,
+                                overflow: "hidden",
+                                boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                            }}
+                            onClick={() => {
+                                setActiveIndex(idx);
+                                setThumbView(false);
+                                setVisible(true);
+                                setShowExif(false);
+                                setExifData(null);
+                            }}
+                            title={img.alt}
                         >
-                            {Cell}
-                        </Grid>
-                    )}
+                            {img.src ? (
+                                <img
+                                    src={img.src}
+                                    alt={img.alt}
+                                    style={{
+                                        maxWidth: "96%",
+                                        maxHeight: "96%",
+                                        borderRadius: 10,
+                                        objectFit: "contain",
+                                        background: "#fff"
+                                    }}
+                                />
+                            ) : null}
+                        </div>
+                    ))}
                 </div>
             )}
 
@@ -317,8 +262,8 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
             {!thumbView && images.length > 0 && (
                 <Viewer
                     visible={visible}
-                    images={images.map((img, idx) => ({
-                        src: thumbs[idx] || "",
+                    images={images.map(img => ({
+                        src: img.src || "",
                         alt: img.alt
                     }))}
                     activeIndex={activeIndex}
@@ -371,7 +316,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
             )}
 
             {/* --- EXIF Modal for current image --- */}
-            {showExif && images.length > 0 && thumbs[activeIndex] && (
+            {showExif && images.length > 0 && images[activeIndex] && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[11000]">
                     <div className="max-w-lg max-h-[90vh] overflow-auto bg-white/95 dark:bg-gray-900/95 text-black dark:text-white rounded-xl shadow-xl p-6 border border-blue-400 relative">
                         <button
@@ -384,7 +329,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                         <div className="text-xs max-h-[60vh] overflow-auto">
                             {exifData && typeof exifData === "object" && Object.keys(exifData).length > 0 ? (
                                 Array.isArray(exifData) ? (
-                                    exifData.map((item: any, idx: number) => (
+                                    exifData.map((item, idx) => (
                                         <div key={idx}>
                                             {typeof item === "object" ? JSON.stringify(item) : String(item)}
                                         </div>

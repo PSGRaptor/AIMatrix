@@ -1,12 +1,12 @@
 {
   "name": "Wan2GP",
   "icon": "icons/icon_1750162240444.ico",
-  "description": "Image to Video with audio sync",
+  "description": "Image to Video with audio sync\n",
   "toolRoot": "Y:\\Wan2GP",
   "url": "http://127.0.0.1:7860",
   "outputFolder": "Y:\\Wan2GP\\outputs",
   "updateCommand": "",
   "startCommand": "Y:\\Wan2GP\\ffmpeg.exe",
-  "lastModified": "2025-06-17T16:56:21.864Z",
+  "lastModified": "2025-06-22T21:16:59.582Z",
   "createdAt": "2025-06-17T12:12:33.102Z"
 }
