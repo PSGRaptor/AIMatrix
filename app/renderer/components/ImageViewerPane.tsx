@@ -1,24 +1,27 @@
+// app/renderer/components/ImageViewerPane.tsx
+
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { ToolConfig } from "../env";
 import Viewer from "react-viewer-aim";
 import piexif from "piexifjs";
 import chunksExtract from "png-chunks-extract";
 import PNGtext from "png-chunk-text";
-import { FixedSizeGrid as Grid } from "react-window";
+import { FixedSizeGrid as Grid, GridChildComponentProps } from "react-window";
 
+// --- Constants ---
 const THUMB_SIZE = 220;
-const GRID_GAP = 16; // px gap between cells
-const GRID_BUFFER_ROWS = 2; // how many rows before/after viewport to render
+const GRID_GAP = 16;
+const GRID_BUFFER_ROWS = 2;
 
+// --- Type Definitions ---
 type ImageViewerPaneProps = {
     tool: ToolConfig | null;
     onBack: () => void;
 };
-
 type ImageFile = { alt: string; filePath: string };
-type ThumbCache = Record<number, string>; // index => base64
+type ThumbCache = Record<number, string>;
 
-// Extracts PNG tEXt chunks (for PNG metadata)
+// --- Extract PNG Metadata as Text Chunks ---
 function extractPngTextChunks(dataUrl: string): Record<string, string> {
     try {
         const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
@@ -40,14 +43,11 @@ function extractPngTextChunks(dataUrl: string): Record<string, string> {
 }
 
 const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
-    // --- Folder navigation ---
+    // --- State ---
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [folders, setFolders] = useState<string[]>([]);
-    // --- Flat file list (not base64!) ---
     const [images, setImages] = useState<ImageFile[]>([]);
-    // --- Loaded thumbs (base64, virtualized by index) ---
     const [thumbs, setThumbs] = useState<ThumbCache>({});
-    // --- UI state ---
     const [isLoading, setIsLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [thumbView, setThumbView] = useState(true);
@@ -56,10 +56,11 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
     const [showExif, setShowExif] = useState(false);
     const [exifData, setExifData] = useState<any | null>(null);
 
-    // Grid ref for focus restore if you wish
-    const gridScrollRef = useRef<HTMLDivElement>(null);
+    // For grid width calculation
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(1200);
 
-    // --- Tool/folder loading (names only) ---
+    // --- Tool/folder state resets ---
     useEffect(() => {
         setThumbView(true);
         setShowExif(false);
@@ -87,7 +88,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         })();
     }, [tool]);
 
-    // --- Scan image names in folder (NOT base64) ---
+    // --- Folder: get image names (not base64!) ---
     useEffect(() => {
         let isMounted = true;
         setImages([]);
@@ -119,88 +120,68 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         return () => { isMounted = false; };
     }, [currentFolder]);
 
-    // --- Load a thumbnail (just-in-time), returns promise ---
-    const loadThumb = useCallback((idx: number) => {
-        const img = images[idx];
-        if (!img || thumbs[idx]) return; // already loaded
-        window.electronAPI.readImageAsDataUrl(img.filePath).then(dataUrl => {
-            if (dataUrl) {
-                setThumbs(old => ({ ...old, [idx]: dataUrl }));
-            }
-            setProgress((loaded) => {
-                // For better UI, count loaded images
-                const total = images.length || 1;
-                const nLoaded = Object.keys(thumbs).length + 1;
-                return Math.round((nLoaded / total) * 100);
-            });
-        });
-    }, [images, thumbs]);
-
-    // --- EXIF/METADATA loading for current image (when requested) ---
+    // --- Responsive: recalc columns ---
     useEffect(() => {
-        if (!showExif) return;
-        if (!(activeIndex in thumbs)) {
-            setExifData(null);
-            return;
-        }
-        const src = thumbs[activeIndex];
-        if (!src) {
-            setExifData(null);
-            return;
-        }
-        if (src.startsWith("data:image/png")) {
-            setExifData(extractPngTextChunks(src));
-        } else {
-            try {
-                const exifObj = piexif.load(src);
-                setExifData(exifObj);
-            } catch {
-                setExifData(null);
-            }
-        }
-    }, [activeIndex, thumbs, showExif]);
-
-    // --- Helper for folder dropdown ---
-    function displayFolder(folderPath: string) {
-        if (!tool?.outputFolder) return folderPath;
-        if (folderPath === tool.outputFolder) return "Root";
-        return folderPath.replace(tool.outputFolder, "").replace(/^[/\\]/, "");
-    }
-
-    // --- VIRTUALIZED GRID SETUP ---
-    // Responsive: calculate columns by container width
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [containerWidth, setContainerWidth] = useState(1200); // fallback
-
-    useEffect(() => {
-        // Track container size for responsive grid
         function handleResize() {
-            if (containerRef.current) {
-                setContainerWidth(containerRef.current.offsetWidth);
-            }
+            if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
         }
         handleResize();
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
     useEffect(() => {
-        if (containerRef.current) {
-            setContainerWidth(containerRef.current.offsetWidth);
-        }
+        if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
     }, [thumbView, images.length]);
 
     const colCount = Math.max(1, Math.floor(containerWidth / (THUMB_SIZE + GRID_GAP)));
     const rowCount = Math.ceil(images.length / colCount);
 
-    // --- Grid Cell Renderer ---
-    const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
+    // --- JIT thumbnail loader ---
+    const loadThumb = useCallback(
+        (idx: number) => {
+            if (!images[idx] || thumbs[idx]) return;
+            window.electronAPI.readImageAsDataUrl(images[idx].filePath).then(dataUrl => {
+                if (dataUrl) {
+                    setThumbs(old => ({ ...old, [idx]: dataUrl }));
+                    setProgress(() => {
+                        const total = images.length || 1;
+                        const loaded = Object.keys(thumbs).length + 1;
+                        return Math.round((loaded / total) * 100);
+                    });
+                }
+            });
+        },
+        // don't include thumbs in deps: otherwise it triggers infinite loads!
+        [images]
+    );
+
+    // --- EXIF for current image, only when showExif changes ---
+    useEffect(() => {
+        if (!showExif) return;
+        const src = thumbs[activeIndex];
+        if (!src) { setExifData(null); return; }
+        if (src.startsWith("data:image/png")) {
+            setExifData(extractPngTextChunks(src));
+        } else {
+            try {
+                setExifData(piexif.load(src));
+            } catch { setExifData(null); }
+        }
+    }, [activeIndex, thumbs, showExif]);
+
+    // --- Folder display helper ---
+    function displayFolder(folderPath: string) {
+        if (!tool?.outputFolder) return folderPath;
+        if (folderPath === tool.outputFolder) return "Root";
+        return folderPath.replace(tool.outputFolder, "").replace(/^[/\\]/, "");
+    }
+
+    // --- Virtual Grid Cell Renderer ---
+    const Cell = ({ columnIndex, rowIndex, style }: GridChildComponentProps) => {
         const idx = rowIndex * colCount + columnIndex;
         if (idx >= images.length) return null;
         const img = images[idx];
-        // JIT load the thumb if not loaded
-        if (!thumbs[idx]) {
-            loadThumb(idx);
-        }
+        if (!thumbs[idx]) loadThumb(idx);
         return (
             <div
                 style={{
@@ -240,10 +221,10 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
         );
     };
 
-    // --- RENDER ---
+    // --- Render ---
     return (
         <div className="relative w-full h-full bg-[#111] flex flex-col" style={{ minHeight: 0, minWidth: 0 }}>
-            {/* --- Top Bar: Back & Folders --- */}
+            {/* --- Top Bar: Back & Folder Picker --- */}
             <div className="flex items-center gap-4 p-3 z-20">
                 <button
                     onClick={() => {
@@ -272,7 +253,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                 )}
             </div>
 
-            {/* --- Progress overlay when loading --- */}
+            {/* --- Loading Progress Overlay --- */}
             {isLoading && (
                 <div className="flex flex-col items-center justify-center py-12">
                     <div className="text-xl text-blue-300 mb-4">Scanning Images…</div>
@@ -298,6 +279,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                             No images found in this folder.
                         </div>
                     ) : (
+                        // TS2786 workaround: cast Grid to any if types package causes error
                         <Grid
                             columnCount={colCount}
                             rowCount={rowCount}

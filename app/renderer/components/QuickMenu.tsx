@@ -1,6 +1,7 @@
 // app/renderer/components/QuickMenu.tsx
 
 import React from 'react';
+import { FixedSizeGrid } from "react-window";
 // Import SVGs as React components for both dark and light mode
 import CardsIconDark from '../assets/icons/cards-dark.svg?react';
 import CardsIconLight from '../assets/icons/cards-light.svg?react';

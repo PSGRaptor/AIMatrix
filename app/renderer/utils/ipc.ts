@@ -32,6 +32,10 @@ export async function openImageViewer(outputFolder: string) {
     alert(`Would open folder: ${outputFolder}`);
 }
 
+export function isToolRunning(toolName: string): Promise<boolean> {
+    return window.electronAPI.isToolRunning(toolName);
+}
+
 // Get Electron user data path
 export const getUserDataPath = () =>
     (window as any).electronAPI?.getUserDataPath

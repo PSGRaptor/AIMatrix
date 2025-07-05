@@ -28,32 +28,37 @@ const TerminalPane: React.FC<TerminalPaneProps> = ({ tool, onBack }) => {
             cursorBlink: true,
         });
         xterm.open(termRef.current);
-        xterm.writeln(`Launching: ${tool.startCommand} (in ${tool.toolRoot})...`);
+        xterm.writeln(`Connecting to: ${tool.startCommand} (in ${tool.toolRoot})...`);
 
-        // Start the tool process (custom electronAPI must provide these methods)
-        window.electronAPI.runToolTerminal(tool.startCommand, tool.toolRoot, tool.name);
+        // Check if the tool is already running before launching
+        window.electronAPI.isToolRunning(tool.name).then(isRunning => {
+            if (!isRunning) {
+                window.electronAPI.runToolTerminal(tool.startCommand, tool.toolRoot, tool.name);
+            }
 
-        // Pipe terminal output from backend
-        const dataHandler = (data: string) => xterm.write(data);
-        const exitHandler = (code: number) => xterm.writeln(`\r\n[Process exited with code ${code}]`);
-        window.electronAPI.onToolTerminalData(dataHandler);
-        window.electronAPI.onToolTerminalExit(exitHandler);
+            // Pipe terminal output from backend
+            const dataHandler = (data: string) => xterm.write(data);
+            const exitHandler = (code: number) => xterm.writeln(`\r\n[Process exited with code ${code}]`);
+            window.electronAPI.onToolTerminalData(dataHandler);
+            window.electronAPI.onToolTerminalExit(exitHandler);
 
-        // Pipe user input from xterm to backend
-        const handleUserInput = (data: string) => {
-            window.electronAPI.sendTerminalInput(tool.name, data);
-        };
-        xterm.onData(handleUserInput);
+            // Pipe user input from xterm to backend
+            const handleUserInput = (input: string) => {
+                window.electronAPI.sendTerminalInput(tool.name, input);
+            };
+            xterm.onData(handleUserInput);
 
-        xtermRef.current = xterm;
+            xtermRef.current = xterm;
+        });
 
         // Cleanup handlers and xterm on unmount/change
         return () => {
-            xterm.dispose();
+            if (xtermRef.current) xtermRef.current.dispose();
             window.electronAPI.onToolTerminalData(() => {});
             window.electronAPI.onToolTerminalExit(() => {});
         };
     }, [tool]);
+
 
     if (!tool) {
         return (

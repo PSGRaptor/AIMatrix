@@ -11,7 +11,7 @@ export interface ToolConfig {
     startCommand: string;
 }
 
-export interface ElectronAPI {
+export interface electronAPI {
     // Tool data
     getTools: () => Promise<ToolConfig[]>;
     toolsSave: (tool: ToolConfig) => Promise<any>;
@@ -31,10 +31,11 @@ export interface ElectronAPI {
     // Optional: For legacy or advanced control
     startTool?: (startCommand: string, workingDir: string) => Promise<{ success: boolean; error?: string }>;
     toolsDelete: (name: string) => Promise<any>;
+    isToolRunning: (toolName: string) => Promise<boolean>;
 }
 
 declare global {
     interface Window {
-        electronAPI: ElectronAPI;
+        electronAPI: electronAPI;
     }
 }

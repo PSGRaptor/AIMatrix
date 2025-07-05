@@ -121,7 +121,9 @@ ipcMain.handle('tools:copyIcon', async (_event, srcPath: string) => {
     return `icons/${destName}`;
 });
 
-// --------- OTHER APP HANDLERS (unchanged) ----------
+ipcMain.handle("is-tool-running", (_event, toolName: string) => {
+    return !!runningPtys[toolName];
+});
 
 ipcMain.handle("get-image-files-in-folder", async (_event, folder) => {
     if (!fs.existsSync(folder)) return [];
