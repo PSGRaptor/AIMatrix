@@ -1,7 +1,7 @@
 // app/renderer/utils/ipc.ts
 
-// Import the ElectronAPI type
-import type { ElectronAPI } from "../env";
+// Import the electronAPI type
+import type { electronAPI } from "../env";
 
 // Run the tool's terminal command (start script, etc.)
 export async function runToolTerminal(

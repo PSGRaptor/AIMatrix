@@ -1,7 +1,8 @@
 // app/main/preload.ts
 
 import { contextBridge, ipcRenderer } from "electron";
-
+import { join } from "path";
+import { readFileSync } from "fs";
 /**
  * ToolConfig type for use in method signatures.
  */
@@ -15,6 +16,15 @@ export interface ToolConfig {
     updateCommand: string;
     startCommand: string;
     [key: string]: any; // Allow optional additional fields
+}
+
+const packageJsonPath = join(__dirname, "..", "..", "package.json");
+let appVersion = "0.0.0";
+try {
+    const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    appVersion = pkg.version;
+} catch (e) {
+    // fallback or log error
 }
 
 /**
@@ -149,6 +159,10 @@ const electronAPI = {
      */
     getUserDataPathSync: () => ipcRenderer.sendSync("getUserDataPathSync"),
 
+    appInfo: {
+        version: appVersion,
+    },
+
     // --- GENERAL PURPOSE (fallback, rarely used) ---
     /**
      * Invoke any channel generically (advanced).
@@ -160,10 +174,12 @@ const electronAPI = {
  * Expose the API in the renderer process.
  */
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
+contextBridge.exposeInMainWorld("appInfo", { version: appVersion });
 
 // --- TypeScript Global Declaration for window.electronAPI (for autocompletion and TS safety) ---
 declare global {
     interface Window {
         electronAPI: typeof electronAPI;
+        //appInfo: { version: string };
     }
 }

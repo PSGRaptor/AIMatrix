@@ -37,5 +37,9 @@ export interface electronAPI {
 declare global {
     interface Window {
         electronAPI: electronAPI;
+
+        appInfo?: {
+            version: string;
+        };
     }
 }

@@ -29,7 +29,11 @@ export default function App() {
                         About
                     </button>
                 </nav>
-                <span className="ml-auto text-xs text-gray-400">Alpha Build</span>
+
+                <span className="ml-auto text-xs text-gray-400">
+                    v{window.appInfo?.version ?? "0.0.0"}
+                </span>
+
             </header>
             <main className="flex flex-1 min-h-0">
                 <MainView
