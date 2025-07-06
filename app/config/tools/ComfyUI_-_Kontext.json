@@ -1,0 +1,12 @@
+{
+  "name": "ComfyUI - Kontext",
+  "icon": "icons/icon_1751718041625.jpg",
+  "description": "Kontext - Models  Settings",
+  "toolRoot": "Y:\\Kontext-ComfyUI\\ComfyUI_windows_portable\\ComfyUI",
+  "url": "http://127.0.0.1:8188",
+  "outputFolder": "Y:\\Kontext-ComfyUI\\ComfyUI_windows_portable\\ComfyUI\\output\\kontext",
+  "updateCommand": "",
+  "startCommand": "Y:\\Kontext-ComfyUI\\ComfyUI_windows_portable\\run_nvidia_gpu.bat",
+  "lastModified": "2025-07-05T12:20:45.470Z",
+  "createdAt": "2025-07-05T12:20:45.470Z"
+}
