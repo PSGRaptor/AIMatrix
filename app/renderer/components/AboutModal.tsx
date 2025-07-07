@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import pkg from '../../../package.json';
+import AppLogo from '../assets/app-logo.svg';
 
 export default function AboutModal({ onClose }: { onClose: () => void }) {
     const modalRef = useRef<HTMLDivElement>(null);
@@ -27,7 +28,7 @@ export default function AboutModal({ onClose }: { onClose: () => void }) {
                 tabIndex={-1}
             >
                 <div className="flex items-center mb-4">
-                    <img src="./assets/app-logo.svg" className="w-20 h-20 mr-4" alt="AIMatrix Logo" />
+                    <img src={AppLogo} className="w-20 h-20 mr-4" alt="AIMatrix Logo" />
                     <span className="text-2xl font-bold tracking-wide">AI Matrix</span>
                 </div>
                 <div className="mb-2 flex items-center">

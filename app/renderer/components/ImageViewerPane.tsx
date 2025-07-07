@@ -12,6 +12,7 @@ import { FixedSizeGrid as Grid, GridChildComponentProps } from "react-window";
 const THUMB_SIZE = 220;
 const GRID_GAP = 16;
 const GRID_BUFFER_ROWS = 2;
+const GridAny = Grid as any;
 
 // --- Type Definitions ---
 type ImageViewerPaneProps = {
@@ -280,7 +281,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                         </div>
                     ) : (
                         // TS2786 workaround: cast Grid to any if types package causes error
-                        <Grid
+                        <GridAny
                             columnCount={colCount}
                             rowCount={rowCount}
                             columnWidth={THUMB_SIZE + GRID_GAP}
@@ -290,7 +291,7 @@ const ImageViewerPane: React.FC<ImageViewerPaneProps> = ({ tool, onBack }) => {
                             overscanRowCount={GRID_BUFFER_ROWS}
                         >
                             {Cell}
-                        </Grid>
+                        </GridAny>
                     )}
                 </div>
             )}

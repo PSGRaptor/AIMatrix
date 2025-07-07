@@ -42,28 +42,9 @@ function createWindow() {
         ? path.join(__dirname, '..', '..', 'assets', 'icons', 'aimatrix.ico')
         : path.join(process.resourcesPath, 'assets', 'icons', 'aimatrix.ico');
 
-    const splashPath = isDev
-        ? path.join(__dirname, '..', '..', 'assets', 'splash.html')
-        : path.join(process.resourcesPath, 'assets', 'splash.html');
-
-    const splashScreen = new BrowserWindow({
-        width: 600,
-        height: 400,
-        frame: false,
-        show: true,
-        alwaysOnTop: true,
-        resizable: false,
-        icon: nativeImage.createFromPath(iconPath),
-    });
-
-    splashScreen.loadFile(splashPath);
-
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 800,
-        minWidth: 1280,
-        minHeight: 800,
-        show: false,
         icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
@@ -73,31 +54,18 @@ function createWindow() {
         }
     });
 
-    const indexPath = isDev
-        ? "http://localhost:5173"
-        : path.join(__dirname, "..", "..", "dist", "renderer", "index.html");
-
     if (isDev) {
-        console.log("indexPath to load:", indexPath, fs.existsSync(indexPath));
-        mainWindow.loadURL(indexPath);
+        mainWindow.loadURL("http://localhost:5173");
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     } else {
-        if (mainWindow) {
-
-            mainWindow.loadFile(indexPath);
-        }
+        const indexPath = path.join(__dirname, "..", "..", "dist", "renderer", "index.html");
+        mainWindow.loadFile(indexPath);
     }
 
-    mainWindow.once("ready-to-show", () => {
-        splashScreen.destroy();
-        mainWindow?.show();
-    });
-
-    mainWindow.on("closed", () => {
+    mainWindow.on('closed', () => {
         mainWindow = null;
     });
 }
-
 
 console.log('Electron app is starting');
 

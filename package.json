@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.1.8-beta.8",
+  "version": "0.1.8-beta.9",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -9,6 +9,7 @@
     "olddev": "concurrently \"vite --config vite.config.ts\" \"wait-on http://localhost:5173 && electron .\"",
     "dev": "concurrently \"cross-env NODE_ENV=development vite --config vite.config.ts\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "vite build && tsc -p tsconfig.main.json",
+    "clean": "rimraf dist release app/main/*.js app/main/*.js.map node_modules yarn.lock package-lock.json",
     "dist": "electron-builder",
     "start": "electron .",
     "build:main": "tsc --project tsconfig.main.json",
@@ -62,9 +63,10 @@
       "buildResources": "assets"
     },
     "files": [
-      "renderer/dist/**/*",
+      "dist/**/*",
       "app/main/**/*",
       "node_modules/**/*",
+      "assets/**/*",
       "package.json"
     ],
     "asar": true,
@@ -75,6 +77,13 @@
       "target": ["nsis"],
       "icon": "assets/icons/aimatrix.ico"
     }
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "AI Matrix"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

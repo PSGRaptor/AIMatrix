@@ -3,6 +3,6 @@ export {};
 
 declare global {
     interface Window {
-      //  electronAPI: import('./env').ElectronAPI;
+      //  electronAPI: import('./env').electronAPI;
     }
 }

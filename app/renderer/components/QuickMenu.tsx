@@ -20,6 +20,11 @@ type QuickMenuProps = {
     setTheme: (t: "dark" | "light") => void;
     activeMenu?: string;
     setActiveMenu?: (type: "cards" | "imageViewer" | "terminal") => void;
+    terminalEnabled?: boolean;
+    imageViewerEnabled?: boolean;
+    onShowCards?: () => void;
+    onShowImageViewer?: () => void;
+    onShowTerminal?: () => void;
 };
 
 const ICON_SIZE = 32; // 20% larger than original

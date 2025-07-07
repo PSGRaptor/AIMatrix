@@ -66,7 +66,7 @@ const electronAPI = {
      * Show an open file dialog (for selecting folders, files, etc).
      */
     showOpenDialog: (opts: any) => ipcRenderer.invoke("showOpenDialog", opts),
-
+    startTool: (startCommand: string, workingDir: string) => ipcRenderer.invoke("start-tool", startCommand, workingDir),
     // --- IMAGES & OUTPUT FILES ---
     /**
      * Save image data to a file.
