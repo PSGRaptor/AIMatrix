@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.1.8-beta.7",
+  "version": "0.1.8-beta.8",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -59,10 +59,10 @@
     "productName": "AIMatrix",
     "directories": {
       "output": "release",
-      "buildResources": "build"
+      "buildResources": "assets"
     },
     "files": [
-      "dist/**/*",
+      "renderer/dist/**/*",
       "app/main/**/*",
       "node_modules/**/*",
       "package.json"
@@ -72,9 +72,8 @@
       "main": "app/main/main.js"
     },
     "win": {
-      "target": [
-        "nsis"
-      ]
+      "target": ["nsis"],
+      "icon": "assets/icons/aimatrix.ico"
     }
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"

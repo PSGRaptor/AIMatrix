@@ -5,6 +5,7 @@ import path from 'path';
 
 export default defineConfig({
     root: 'app/renderer',
+    base: './',
     build: {
         outDir: '../../dist/renderer',
         emptyOutDir: true,

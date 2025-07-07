@@ -1,7 +1,12 @@
 // app/main/main.ts
 
 console.log("CANARY: Electron main.ts started!", __dirname, process.cwd());
-import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, shell, ipcMain, dialog, nativeImage } from "electron";
+process.env.ELECTRON_DISABLE_GPU = 'true';          // hard disable GPU
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
@@ -31,10 +36,16 @@ const runningPtys: { [toolName: string]: pty.IPty } = {};
 
 // --------- ELECTRON WINDOW ----------
 function createWindow() {
-    console.log("Creating Window");
+    const isDev = process.env.NODE_ENV === "development";
+
+    const iconPath = isDev
+        ? path.join(__dirname, '..', '..', 'assets', 'icons', 'aimatrix.ico')
+        : path.join(process.resourcesPath, 'assets', 'icons', 'aimatrix.ico');
+
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 800,
+        icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
@@ -43,21 +54,21 @@ function createWindow() {
         }
     });
 
-    if (process.env.NODE_ENV === "development") {
-        console.log("Development Build - Loading URL:", "http://localhost:5173");
+    if (isDev) {
         mainWindow.loadURL("http://localhost:5173");
         mainWindow.webContents.openDevTools({ mode: 'detach' });
-        mainWindow.webContents.on('did-finish-load', () => {
-            console.log('Window finished loading.');
-        });
-        mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-            console.error('Window failed to load:', errorCode, errorDescription);
-        });
     } else {
-        mainWindow.loadFile(path.join(__dirname, "../../renderer/dist/index.html"));
+        const indexPath = path.join(__dirname, "..", "..", "dist", "renderer", "index.html");
+        mainWindow.loadFile(indexPath);
     }
+
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
 }
+
 console.log('Electron app is starting');
+
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
