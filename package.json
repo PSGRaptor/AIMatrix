@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.1.8.6",
+  "version": "0.1.8-beta.7",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -8,17 +8,17 @@
   "scripts": {
     "olddev": "concurrently \"vite --config vite.config.ts\" \"wait-on http://localhost:5173 && electron .\"",
     "dev": "concurrently \"cross-env NODE_ENV=development vite --config vite.config.ts\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
-    "build": "vite build && tsc -p app/main/",
+    "build": "vite build && tsc -p tsconfig.main.json",
     "dist": "electron-builder",
     "start": "electron .",
     "build:main": "tsc --project tsconfig.main.json",
     "rebuild": "electron-rebuild",
-    "watch:main": "tsc --watch --project tsconfig.main.json"
+    "watch:main": "tsc --watch --project tsconfig.main.json",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "electron": "^29.2.0",
     "mime": "2.6.0",
-    "node-pty": "^1.0.0",
+    "node-pty": "1.0.0",
     "piexifjs": "^1.0.6",
     "png-chunk-text": "^1.0.0",
     "png-chunks-extract": "^1.0.0",
@@ -44,6 +44,7 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.0",
     "cross-env": "^7.0.3",
+    "electron": "29.2.0",
     "electron-builder": "^26.0.12",
     "electron-rebuild": "^3.2.9",
     "postcss": "^8.4.32",
@@ -71,7 +72,9 @@
       "main": "app/main/main.js"
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     }
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
