@@ -34,6 +34,11 @@ export interface electronAPI {
     isToolRunning: (toolName: string) => Promise<boolean>;
 }
 
+declare module '*.svg?url' {
+    const src: string;
+    export default src;
+}
+
 declare global {
     interface Window {
         electronAPI: electronAPI;

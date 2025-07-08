@@ -13,7 +13,12 @@
     "resolveJsonModule": true,
     "baseUrl": "."
   },
-  "include": ["app/**/*"],
+  "include": [
+    "app/env.d.ts",
+    "app/**/*",
+    "app/renderer"
+  ],
+
   "exclude": [
     "node_modules",
     "dist",

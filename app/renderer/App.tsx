@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import MainView from "./views/MainView";
 import AboutModal from "./components/AboutModal";
+import appLogoUrl from './assets/app-logo.svg?url';
 
 export default function App() {
     const [showAbout, setShowAbout] = useState(false);
@@ -22,8 +23,8 @@ export default function App() {
         <div className="flex flex-col h-screen w-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-white">
             {/* Top Navigation Bar */}
             <header className="flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-900 shadow-lg">
-                <img src="./assets/app-logo.svg" className="w-8 h-8 mr-3" alt="AIMatrix Logo" />
-                <span className="text-xl font-bold tracking-wide mr-8">AIMatrix</span>
+                <img src={appLogoUrl} className="w-8 h-8 mr-3" alt="AIMatrix Logo" />
+                <span className="text-xl font-bold tracking-wide mr-8">AI Matrix</span>
                 <nav className="flex gap-4">
                     <button onClick={() => setShowAbout(true)} className="hover:underline">
                         About
