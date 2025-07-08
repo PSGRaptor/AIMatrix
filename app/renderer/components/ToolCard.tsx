@@ -23,6 +23,41 @@ export default function ToolCard({
     // State for base64 icon data
     const [iconDataUrl, setIconDataUrl] = useState<string | null>(null);
 
+    // ---- NEW: Track tool running state for Stop button ----
+    const [isRunning, setIsRunning] = useState<boolean>(false);
+
+    // Poll the running state on mount, and every 2s
+    useEffect(() => {
+        let mounted = true;
+
+        async function checkRunning() {
+            try {
+                const running = await window.electronAPI.isToolRunning(tool.name);
+                if (mounted) setIsRunning(running);
+            } catch {
+                if (mounted) setIsRunning(false);
+            }
+        }
+
+        checkRunning();
+        const interval = setInterval(checkRunning, 2000);
+
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, [tool.name]);
+
+    // Helper: After stopping/starting tool, refresh running state
+    const refreshRunningState = async () => {
+        try {
+            const running = await window.electronAPI.isToolRunning(tool.name);
+            setIsRunning(running);
+        } catch {
+            setIsRunning(false);
+        }
+    };
+
     // Only load icon as DataURL if it looks like a stored icon path
     useEffect(() => {
         let cancelled = false;
@@ -106,6 +141,8 @@ export default function ToolCard({
                     onClick={e => {
                         e.stopPropagation();
                         onStartTerminal();
+                        // Wait and refresh running state after short delay
+                        setTimeout(refreshRunningState, 1000);
                     }}
                 >
                     Start
@@ -135,12 +172,14 @@ export default function ToolCard({
                     </button>
                 )}
                 <button
-                    className="px-3 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-sm"
-                    title="Stop Tool"
-                    onClick={e => {
+                    className="px-3 py-1 rounded bg-red-700 text-white text-sm transition disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                    title={isRunning ? "Stop Tool" : "Tool is not running"}
+                    onClick={async e => {
                         e.stopPropagation();
-                        window.electronAPI?.killToolProcess(tool.name);
+                        await window.electronAPI?.killToolProcess(tool.name);
+                        setTimeout(refreshRunningState, 1000); // Refresh after stop
                     }}
+                    disabled={!isRunning}
                 >
                     Stop
                 </button>

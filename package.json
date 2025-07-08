@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
