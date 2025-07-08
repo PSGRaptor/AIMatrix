@@ -1,4 +1,4 @@
-// app/env.d.ts
+// app/renderer/env.d.ts
 
 export interface ToolConfig {
     name: string;
@@ -32,11 +32,6 @@ export interface electronAPI {
     startTool?: (startCommand: string, workingDir: string) => Promise<{ success: boolean; error?: string }>;
     toolsDelete: (name: string) => Promise<any>;
     isToolRunning: (toolName: string) => Promise<boolean>;
-}
-
-declare module '*.svg?url' {
-    const src: string;
-    export default src;
 }
 
 declare global {

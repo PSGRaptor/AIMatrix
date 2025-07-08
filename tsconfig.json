@@ -14,7 +14,8 @@
     "baseUrl": "."
   },
   "include": [
-    "app/env.d.ts",
+    "app/renderer/env.d.ts",
+    "app/renderer/types/svg.d.ts",
     "app/**/*",
     "app/renderer"
   ],
