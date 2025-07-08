@@ -2,7 +2,7 @@
 
 console.log("CANARY: Electron main.ts started!", __dirname, process.cwd());
 import { app, BrowserWindow, shell, ipcMain, dialog, nativeImage } from "electron";
-process.env.ELECTRON_DISABLE_GPU = 'true';          // hard disable GPU
+process.env.ELECTRON_DISABLE_GPU = 'true';
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-compositing');
@@ -10,9 +10,8 @@ app.commandLine.appendSwitch('disable-gpu-compositing');
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
-import * as pty from "node-pty"; // Use node-pty for interactive terminals
+import * as pty from "node-pty";
 
-// Tool type definition - include optional createdAt/lastModified
 export type ToolConfig = {
     name: string;
     icon: string;
@@ -33,6 +32,16 @@ const mime = require("mime");
 
 let mainWindow: BrowserWindow | null = null;
 const runningPtys: { [toolName: string]: pty.IPty } = {};
+
+// --- Robust global error handler (fixes 'code' error) ---
+process.on("uncaughtException", (err) => {
+    const code = (err as any)?.code;
+    if (code === "EPIPE" || code === "ERR_STREAM_DESTROYED") {
+        console.warn("Ignored terminal error:", code);
+        return;
+    }
+    console.error("Uncaught exception:", err);
+});
 
 // --------- ELECTRON WINDOW ----------
 function createWindow() {
@@ -83,7 +92,6 @@ function createWindow() {
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     } else {
         if (mainWindow) {
-
             mainWindow.loadFile(indexPath);
         }
     }
@@ -98,7 +106,6 @@ function createWindow() {
     });
 }
 
-
 console.log('Electron app is starting');
 
 app.whenReady().then(createWindow);
@@ -110,14 +117,22 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
     for (const toolName in runningPtys) {
-        runningPtys[toolName].kill();
+        try {
+            runningPtys[toolName].kill();
+        } catch (err: any) {
+            const code = (err as any)?.code;
+            if (code === "EPIPE" || code === "ERR_STREAM_DESTROYED") {
+                console.warn("Suppressed PTY kill error:", code);
+            } else {
+                throw err;
+            }
+        }
         delete runningPtys[toolName];
     }
 });
 
 // --------- TOOL CRUD HANDLERS ----------
 
-// List all tools (loadTools)
 ipcMain.handle("get-tools", async () => {
     if (!fs.existsSync(TOOL_DIR)) return [];
     const files = fs.readdirSync(TOOL_DIR).filter(f => f.endsWith(".json"));
@@ -128,7 +143,6 @@ ipcMain.handle("get-tools", async () => {
     });
 });
 
-// Save (add or update) a tool
 ipcMain.handle("tools:save", async (_event, tool: ToolConfig) => {
     const safeName = tool.name.replace(/[^a-zA-Z0-9_\-]/g, "_");
     const filePath = path.join(TOOL_DIR, `${safeName}.json`);
@@ -138,7 +152,6 @@ ipcMain.handle("tools:save", async (_event, tool: ToolConfig) => {
     return true;
 });
 
-// Delete a tool
 ipcMain.handle('tools:delete', async (_event, name: string) => {
     const safeName = name.replace(/[^a-zA-Z0-9_\-]/g, "_");
     const filePath = path.join(TOOL_DIR, `${safeName}.json`);
@@ -146,12 +159,10 @@ ipcMain.handle('tools:delete', async (_event, name: string) => {
     return true;
 });
 
-// Show open dialog (general-purpose, passes renderer's options to Electron)
 ipcMain.handle('showOpenDialog', async (_event, opts) => {
     return await dialog.showOpenDialog(opts || {});
 });
 
-// Copy icon into userData/icons, return relative path
 ipcMain.handle('tools:copyIcon', async (_event, srcPath: string) => {
     if (!srcPath) throw new Error('No icon selected');
     const iconsDir = path.join(app.getPath('userData'), 'icons');
@@ -160,7 +171,6 @@ ipcMain.handle('tools:copyIcon', async (_event, srcPath: string) => {
     const destName = `icon_${Date.now()}${ext}`;
     const destPath = path.join(iconsDir, destName);
     fs.copyFileSync(srcPath, destPath);
-    // Return relative path, e.g., 'icons/icon_12345.png'
     return `icons/${destName}`;
 });
 
@@ -188,9 +198,20 @@ ipcMain.handle("list-images-in-folder", async (_event, folder: string) => {
     }
 });
 
+// --------- TERMINAL / TOOL PROCESS HANDLERS ---------
+
 ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: string, toolName: string) => {
     if (runningPtys[toolName]) {
-        runningPtys[toolName].kill();
+        try {
+            runningPtys[toolName].kill();
+        } catch (err: any) {
+            const code = (err as any)?.code;
+            if (code === "EPIPE" || code === "ERR_STREAM_DESTROYED") {
+                console.warn("Suppressed PTY kill error:", code);
+            } else {
+                throw err;
+            }
+        }
         delete runningPtys[toolName];
     }
     const isWindows = os.platform() === "win32";
@@ -217,13 +238,24 @@ ipcMain.handle("run-tool-terminal", (event, startCommand: string, workingDir: st
         delete runningPtys[toolName];
     });
 
+    // Most node-pty builds do NOT support .on("error") so do NOT add an error listener here!
+
     return { success: true };
 });
 
 ipcMain.on("terminal-input", (_event, toolName: string, data: string) => {
     const ptyProc = runningPtys[toolName];
     if (ptyProc) {
-        ptyProc.write(data);
+        try {
+            ptyProc.write(data);
+        } catch (err: any) {
+            const code = (err as any)?.code;
+            if (code === "EPIPE" || code === "ERR_STREAM_DESTROYED") {
+                console.warn("Suppressed input error:", code);
+            } else {
+                throw err;
+            }
+        }
     }
 });
 
@@ -255,7 +287,16 @@ ipcMain.handle("open-output-folder", async (_event, folderPath: string) => {
 ipcMain.handle("kill-tool-process", (_event, toolName: string) => {
     const ptyProc = runningPtys[toolName];
     if (ptyProc) {
-        ptyProc.kill();
+        try {
+            ptyProc.kill();
+        } catch (err: any) {
+            const code = (err as any)?.code;
+            if (code === "EPIPE" || code === "ERR_STREAM_DESTROYED") {
+                console.warn("Suppressed kill error:", code);
+            } else {
+                throw err;
+            }
+        }
         delete runningPtys[toolName];
         return { success: true };
     }
@@ -269,11 +310,9 @@ ipcMain.on('getUserDataPathSync', (event) => {
 
 ipcMain.handle('get-tool-icon', async (_event, relPath: string) => {
     if (!relPath) return null;
-    // UserData path
     const userData = app.getPath('userData');
     const iconPath = path.join(userData, relPath);
     if (!fs.existsSync(iconPath)) return null;
-    // Read file and return as data URL
     const ext = path.extname(iconPath).toLowerCase();
     let mime = "image/png";
     if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
@@ -313,7 +352,6 @@ ipcMain.handle("readImageAsDataUrl", async (_event, absPath: string) => {
     console.log("readImageAsDataUrl executed");
     if (!absPath || !fs.existsSync(absPath)) return null;
     try {
-        // Auto-detect the correct mime type for any file
         const mimeType = mime.getType(absPath) || "image/png";
         const data = fs.readFileSync(absPath);
         const base64 = data.toString("base64");
@@ -335,3 +373,4 @@ ipcMain.handle("listFoldersInFolder", async (_event, folder: string) => {
         return [];
     }
 });
+

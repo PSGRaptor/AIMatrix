@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -15,7 +15,9 @@
     "build:main": "tsc --project tsconfig.main.json",
     "rebuild": "electron-rebuild",
     "watch:main": "tsc --watch --project tsconfig.main.json",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "predev": "node app/scripts/git-info.js",
+    "prebuild": "node app/scripts/git-info.js"
   },
   "dependencies": {
     "mime": "2.6.0",

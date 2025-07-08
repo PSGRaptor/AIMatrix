@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import pkg from '../../../package.json';
 import AppLogo from '../assets/app-logo.svg';
+import gitInfo from '../git-info.json';
 
 export default function AboutModal({ onClose }: { onClose: () => void }) {
     const modalRef = useRef<HTMLDivElement>(null);
@@ -58,7 +59,12 @@ export default function AboutModal({ onClose }: { onClose: () => void }) {
                         <rect x="4" y="5" width="16" height="16" rx="2" stroke="currentColor" />
                         <path d="M8 3v4M16 3v4" stroke="currentColor" />
                     </svg>
-                    <span>Last Update: June 2025</span>
+                    <span>
+                        Last Update:&nbsp;
+                        {gitInfo.lastCommit
+                        ? new Date(gitInfo.lastCommit).toLocaleDateString()
+                        : "Unknown"}
+                    </span>
                 </div>
                 <div className="flex items-center mb-1 text-sm">
                     <span className="mr-2">v{pkg.version}</span>
