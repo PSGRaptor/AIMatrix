@@ -25,8 +25,28 @@ export type ToolConfig = {
     lastModified?: string;
 };
 
-const TOOL_DIR = path.join(process.cwd(), "app/config/tools");
+const TOOL_DIR = path.join(app.getPath('userData'), "tools");
 if (!fs.existsSync(TOOL_DIR)) fs.mkdirSync(TOOL_DIR, { recursive: true });
+
+function ensureDefaultToolCards() {
+    const userDir = TOOL_DIR;
+    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
+    // Path to bundled default tool cards (inside app folder, unchanged by updates)
+    const defaultDir = path.join(process.resourcesPath, "app", "config", "tools");
+    if (fs.existsSync(defaultDir)) {
+        const userHasCards = fs.readdirSync(userDir).some(f => f.endsWith(".json"));
+        if (!userHasCards) {
+            // Copy all defaults
+            for (const filename of fs.readdirSync(defaultDir)) {
+                if (filename.endsWith(".json")) {
+                    const from = path.join(defaultDir, filename);
+                    const to = path.join(userDir, filename);
+                    fs.copyFileSync(from, to);
+                }
+            }
+        }
+    }
+}
 
 const mime = require("mime");
 
@@ -42,6 +62,13 @@ process.on("uncaughtException", (err) => {
     }
     console.error("Uncaught exception:", err);
 });
+
+function getToolCardsFolder() {
+    const userDataDir = app.getPath('userData');
+    const cardsDir = path.join(userDataDir, 'tools');
+    if (!fs.existsSync(cardsDir)) fs.mkdirSync(cardsDir, { recursive: true });
+    return cardsDir;
+}
 
 // --------- ELECTRON WINDOW ----------
 function createWindow() {
@@ -108,7 +135,10 @@ function createWindow() {
 
 console.log('Electron app is starting');
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    ensureDefaultToolCards();
+    createWindow();
+});
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
