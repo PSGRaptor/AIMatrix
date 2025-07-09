@@ -1,7 +1,6 @@
 // app/renderer/components/QuickMenu.tsx
 
 import React from 'react';
-import { FixedSizeGrid } from "react-window";
 // Import SVGs as React components for both dark and light mode
 import CardsIconDark from '../assets/icons/cards-dark.svg?react';
 import CardsIconLight from '../assets/icons/cards-light.svg?react';
@@ -27,7 +26,7 @@ type QuickMenuProps = {
     onShowTerminal?: () => void;
 };
 
-const ICON_SIZE = 32; // 20% larger than original
+const ICON_SIZE = 32;
 
 // Helper to pick icon based on theme
 function pickIcon(theme: string, LightIcon: any, DarkIcon: any) {
@@ -63,7 +62,7 @@ export default function QuickMenu({
         disabled?: boolean;
     }) {
         return (
-            <div className="relative flex flex-col items-center mb-7 group">
+            <div className="relative flex flex-col items-center my-2 group">
                 <button
                     className={`
                         flex items-center justify-center rounded-full w-12 h-12
@@ -81,10 +80,12 @@ export default function QuickMenu({
                 </button>
                 {/* Tooltip */}
                 <span
-                    className={`pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs rounded px-2 py-1 border shadow
+                    className={`
+                    pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3
+                    text-xs rounded px-2 py-1 border shadow
                     opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
                     ${tooltipClass}
-                    `}
+                `}
                     style={{ whiteSpace: 'nowrap', zIndex: 20, transition: 'opacity 0.2s' }}
                 >
                     {label}
@@ -95,34 +96,37 @@ export default function QuickMenu({
 
     return (
         <nav className={`flex flex-col items-center py-4 ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"} w-[72px] h-full transition-colors duration-200`}>
-            {/* Main App Icons */}
-            <IconButton
-                onClick={() => setActiveMenu && setActiveMenu("cards")}
-                label="Tool Cards"
-                active={activeMenu === "cards"}
-                disabled={false}
-            >
-                {pickIcon(theme, CardsIconLight, CardsIconDark)}
-            </IconButton>
-            <IconButton
-                onClick={() => setActiveMenu && setActiveMenu("imageViewer")}
-                label="Image Viewer"
-                active={activeMenu === "imageViewer"}
-                disabled={!setActiveMenu}
-            >
-                {pickIcon(theme, ImagesIconLight, ImagesIconDark)}
-            </IconButton>
-            <IconButton
-                onClick={() => setActiveMenu && setActiveMenu("terminal")}
-                label="Terminal"
-                active={activeMenu === "terminal"}
-                disabled={!setActiveMenu}
-            >
-                {pickIcon(theme, TerminalIconLight, TerminalIconDark)}
-            </IconButton>
-
-            {/* Theme Toggle Icon */}
-            <div className="mb-10 mt-auto">
+            {/* --- Main Top Icons --- */}
+            <div className="flex flex-col items-center w-full">
+                <IconButton
+                    onClick={() => setActiveMenu && setActiveMenu("cards")}
+                    label="Tool Cards"
+                    active={activeMenu === "cards"}
+                    disabled={false}
+                >
+                    {pickIcon(theme, CardsIconLight, CardsIconDark)}
+                </IconButton>
+                <IconButton
+                    onClick={() => setActiveMenu && setActiveMenu("imageViewer")}
+                    label="Image Viewer"
+                    active={activeMenu === "imageViewer"}
+                    disabled={!setActiveMenu}
+                >
+                    {pickIcon(theme, ImagesIconLight, ImagesIconDark)}
+                </IconButton>
+                <IconButton
+                    onClick={() => setActiveMenu && setActiveMenu("terminal")}
+                    label="Terminal"
+                    active={activeMenu === "terminal"}
+                    disabled={!setActiveMenu}
+                >
+                    {pickIcon(theme, TerminalIconLight, TerminalIconDark)}
+                </IconButton>
+            </div>
+            {/* Spacer */}
+            <div className="flex-1" />
+            {/* --- Bottom Section: Theme toggle & Settings --- */}
+            <div className="flex flex-col items-center w-full mb-2">
                 <IconButton
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     label={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
@@ -131,15 +135,13 @@ export default function QuickMenu({
                         ? <ThemeLightIcon width={ICON_SIZE} height={ICON_SIZE} />
                         : <ThemeDarkIcon width={ICON_SIZE} height={ICON_SIZE} />}
                 </IconButton>
+                <IconButton
+                    onClick={onConfigClick}
+                    label="Settings"
+                >
+                    {pickIcon(theme, SettingsIconLight, SettingsIconDark)}
+                </IconButton>
             </div>
-
-            {/* Settings */}
-            <IconButton
-                onClick={onConfigClick}
-                label="Settings"
-            >
-                {pickIcon(theme, SettingsIconLight, SettingsIconDark)}
-            </IconButton>
         </nav>
     );
 }
