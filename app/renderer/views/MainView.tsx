@@ -107,7 +107,10 @@ const MainView: React.FC<MainViewProps> = ({
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
-            <div className="grid gap-8" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+            <div className="grid gap-8 p-8 pt-10 mt-4 ml-4"
+                 style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
+            >
+
                 {tools.length === 0 ? (
                     <div className="col-span-full text-gray-500 text-xl p-12 text-center">
                         No tools found. Please add .json files in <code>app/config/tools/</code>
@@ -159,7 +162,7 @@ const MainView: React.FC<MainViewProps> = ({
             />
             {/* --- Center Pane (main area) --- */}
             <div
-                className="flex-1 p-8 overflow-y-auto bg-white text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300"
+                className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-white text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300"
                 style={{
                     maxWidth: activeMenu === "imageViewer"
                         ? "100vw"

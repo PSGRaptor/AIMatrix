@@ -1,6 +1,6 @@
 {
   "name": "aimatrix",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "All-in-one desktop AI launcher and manager",
   "main": "app/main/main.js",
   "author": "Badaxiom",
@@ -31,7 +31,8 @@
     "react-window": "^1.8.11",
     "tiff": "^6.2.0",
     "vite-plugin-svgr": "^4.3.0",
-    "xterm": "^5.3.0"
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
   },
   "peerDependencies": {
     "@types/react": "^18.0.0",
@@ -76,7 +77,9 @@
       "main": "app/main/main.js"
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "assets/icons/aimatrix.ico"
     }
   },

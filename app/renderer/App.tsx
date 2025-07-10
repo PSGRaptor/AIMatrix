@@ -36,7 +36,7 @@ export default function App() {
                 </span>
 
             </header>
-            <main className="flex flex-1 min-h-0">
+            <main className="flex flex-1 min-h-0 min-w-0">
                 <MainView
                     openAboutModal={() => setShowAbout(true)}
                     theme={theme}
