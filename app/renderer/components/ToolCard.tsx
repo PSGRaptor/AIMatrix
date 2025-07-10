@@ -149,12 +149,17 @@ export default function ToolCard({
                 </button>
                 {tool.url && (
                     <button
-                        className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm"
-                        title="Open Tool Web UI"
+                        className={`px-3 py-1 rounded text-white text-sm transition 
+            ${isRunning
+                            ? "bg-gray-600 hover:bg-gray-700"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                        title={isRunning ? "Open Tool Web UI" : "Start tool first"}
                         onClick={e => {
                             e.stopPropagation();
-                            openToolWindow(tool.url);
+                            if (isRunning) openToolWindow(tool.url);
                         }}
+                        disabled={!isRunning}
                     >
                         Open UI
                     </button>

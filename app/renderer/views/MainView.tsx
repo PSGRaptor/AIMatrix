@@ -107,8 +107,10 @@ const MainView: React.FC<MainViewProps> = ({
     let centerPane: React.ReactNode;
     if (activeMenu === "cards") {
         centerPane = (
-            <div className="grid gap-8 p-8 pt-10 mt-4 ml-4"
-                 style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
+            <div className="grid gap-8 p-8 pt-10 mt-4 ml-4 overflow-y-auto"
+                 style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                     maxHeight: "100%",
+                 }}
             >
 
                 {tools.length === 0 ? (
